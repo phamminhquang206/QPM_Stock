@@ -718,41 +718,44 @@ body {
 }
 
 .fa-action-buttons {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
+    display: flex;
+    width: 100%;
 }
 
 .btn-fireant-main {
+    width: 100%;
     background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
     color: white;
+    text-decoration: none;
     border: none;
-    padding: 10px 14px;
+    padding: 11px 16px;
     border-radius: var(--radius-sm);
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     transition: all var(--transition-fast);
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+    box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
+    box-sizing: border-box;
 }
 
 .btn-fireant-main:hover {
     background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.5);
+    box-shadow: 0 6px 20px rgba(234, 88, 12, 0.55);
     transform: translateY(-1px);
+    color: white;
 }
 
 .btn-fireant-main .fa-arrow {
-    font-size: 0.95rem;
+    font-size: 1rem;
     transition: transform var(--transition-fast);
 }
 
 .btn-fireant-main:hover .fa-arrow {
-    transform: translate(2px, -2px);
+    transform: translate(3px, -3px);
 }
 
 .btn-fireant-link {

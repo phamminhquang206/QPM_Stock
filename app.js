@@ -30,12 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const heroName = document.getElementById('hero-name');
     const heroPrice = document.getElementById('hero-price');
     const heroChange = document.getElementById('hero-change');
-    const metricPe = document.getElementById('metric-pe');
-    const metricPb = document.getElementById('metric-pb');
-    const metricRoe = document.getElementById('metric-roe');
+    const metricOpen = document.getElementById('metric-open');
+    const metricRef = document.getElementById('metric-ref');
+    const metricCeilFloor = document.getElementById('metric-ceil-floor');
     const metricVol = document.getElementById('metric-vol');
+    const metricForeignBuySell = document.getElementById('metric-foreign-buy-sell');
     const metricForeign = document.getElementById('metric-foreign');
-    const metricHighLow = document.getElementById('metric-highlow');
     const watchlistContainer = document.getElementById('watchlist-items');
 
     let currentSelectedTicker = 'FPT';
@@ -208,10 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         heroChange.textContent = '--';
 
         try {
-            const [quote, ratios] = await Promise.all([
-                window.StockAPI.getStockQuote(currentSelectedTicker),
-                window.StockAPI.getFinancialRatios(currentSelectedTicker)
-            ]);
+            const quote = await window.StockAPI.getStockQuote(currentSelectedTicker);
 
             heroName.textContent = quote.name;
             heroPrice.textContent = window.StockAPI.formatNumber(quote.currentPrice);
@@ -221,16 +218,21 @@ document.addEventListener('DOMContentLoaded', () => {
             heroChange.style.color = getPriceColor(quote.status);
 
             // Metrics
-            metricPe.textContent = ratios.pe ? Number(ratios.pe).toFixed(1) : '--';
-            metricPb.textContent = ratios.pb ? Number(ratios.pb).toFixed(1) : '--';
-            metricRoe.textContent = ratios.roe || '--';
-            metricVol.textContent = window.StockAPI.formatVolume(quote.volume);
-            
-            const net = quote.foreignNet || 0;
-            const netSign = net > 0 ? '+' : '';
-            metricForeign.textContent = `${netSign}${window.StockAPI.formatVolume(net)}`;
-            metricForeign.style.color = net > 0 ? '#00d084' : net < 0 ? '#ff4d4f' : '#94a3b8';
-            metricHighLow.textContent = `${window.StockAPI.formatNumber(quote.lowestPrice)} - ${window.StockAPI.formatNumber(quote.highestPrice)}`;
+            if (metricOpen) metricOpen.textContent = window.StockAPI.formatNumber(quote.openPrice);
+            if (metricRef) metricRef.textContent = window.StockAPI.formatNumber(quote.referencePrice);
+            if (metricCeilFloor) {
+                metricCeilFloor.innerHTML = `<span style="color:var(--color-ceiling)">${window.StockAPI.formatNumber(quote.ceilingPrice)}</span> / <span style="color:var(--color-floor)">${window.StockAPI.formatNumber(quote.floorPrice)}</span>`;
+            }
+            if (metricVol) metricVol.textContent = window.StockAPI.formatVolume(quote.volume);
+            if (metricForeignBuySell) {
+                metricForeignBuySell.textContent = `${window.StockAPI.formatVolume(quote.foreignBuy)} / ${window.StockAPI.formatVolume(quote.foreignSell)}`;
+            }
+            if (metricForeign) {
+                const net = quote.foreignNet || 0;
+                const netSign = net > 0 ? '+' : '';
+                metricForeign.textContent = `${netSign}${window.StockAPI.formatVolume(net)}`;
+                metricForeign.style.color = net > 0 ? '#00d084' : net < 0 ? '#ff4d4f' : '#94a3b8';
+            }
             
             // Update FireAnt dynamic target links
             updateFireAntLinks(currentSelectedTicker);
@@ -245,9 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const sym = (symbol || 'FPT').toUpperCase();
         window.currentStockTicker = sym;
         const faTargetSymbol = document.getElementById('fa-target-symbol');
-        const linkFireAntDirect = document.getElementById('link-fireant-direct');
+        const btnFireAntLink = document.getElementById('btn-fireant-link');
         if (faTargetSymbol) faTargetSymbol.textContent = sym;
-        if (linkFireAntDirect) linkFireAntDirect.href = `https://fireant.vn/dashboard/content/symbols/${sym}`;
+        if (btnFireAntLink) btnFireAntLink.href = `https://fireant.vn/dashboard/content/symbols/${sym}`;
     }
 
     // Search bar listener
@@ -393,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="csc-ticker">${q.ticker} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(${q.exchange}) - ${q.name}</span></div>
                 <div style="display:flex; gap:6px;">
                     <span class="brand-badge" style="cursor:pointer;" onclick="window.inspectStock('${q.ticker}')">🔍 Tra cứu</span>
-                    <span class="brand-badge" style="cursor:pointer; background:rgba(249, 115, 22, 0.2); color:#fb923c; border-color:rgba(249,115,22,0.4);" onclick="window.openFireAnt('${q.ticker}')">🔥 FireAnt ↗</span>
+                    <span class="brand-badge" style="cursor:pointer; background:rgba(249, 115, 22, 0.2); color:#fb923c; border-color:rgba(249,115,22,0.4);" onclick="window.openFireAnt(event, '${q.ticker}')">🔥 FireAnt ↗</span>
                 </div>
             </div>
             <div class="csc-price-row">
@@ -427,47 +429,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickerToInspector(ticker);
     };
 
-    // Global FireAnt Launcher (Handles Mobile App Jump & Web Dashboard)
-    window.openFireAnt = (ticker) => {
+    // Global FireAnt Launcher (Handles Mobile Universal Link & Web Dashboard)
+    window.openFireAnt = (e, ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
         const webUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
+        
+        const btn = document.getElementById('btn-fireant-link');
+        if (btn) btn.href = webUrl;
+
         const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
-        if (isMobile) {
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-            // Record start time to detect if app opened successfully
-            const startTime = Date.now();
-            let opened = false;
-
-            const handleVisibilityChange = () => {
-                if (document.hidden || document.webkitHidden) {
-                    opened = true;
-                }
-            };
-            document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
-
-            // Fallback timeout to open Web if mobile app is not installed
-            setTimeout(() => {
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-                if (!opened && Date.now() - startTime < 2500) {
-                    window.location.href = webUrl;
-                }
-            }, 1200);
-
-            if (isAndroid) {
-                // Try Android Intent URL for FireAnt App
-                window.location.href = `intent://fireant.vn/dashboard/content/symbols/${symbol}#Intent;scheme=https;package=vn.fireant.mobile;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
-            } else if (isIOS) {
-                // Try iOS Universal Link / Custom Scheme
-                window.location.href = `fireant://symbols/${symbol}`;
-            } else {
-                window.location.href = `fireant://symbols/${symbol}`;
-            }
-        } else {
-            // Desktop Browser: Open directly in a new tab
+        if (!isMobile) {
+            if (e && e.preventDefault) e.preventDefault();
             window.open(webUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            // On mobile, if not clicked from a real <a> tag, navigate directly
+            if (!e || !e.target || e.target.tagName !== 'A') {
+                window.location.href = webUrl;
+            }
         }
     };
 

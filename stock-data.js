@@ -1,8 +1,9 @@
-﻿/**
+/**
  * QPM Stock AI - Master Stock Database (HOSE, HNX, UPCoM)
  * Real-time exchange dataset for all active Vietnamese listed equities
  */
 window.VN_STOCKS_DB = {
+    'DRI': { p: 14800, r: 14800, c: 17000, f: 12600, h: 15100, l: 14700, o: 14800, v: 385000, ex: 'UPCOM', n: 'Công ty Cổ phần Đầu tư Cao su Đắk Lắk', bf: 42000, sf: 5000 },
     'NKG': { p: 10900, r: 10600, c: 11300, f: 9860, h: 10950, l: 10500, o: 10600, v: 1544500, ex: 'HOSE', n: 'Công ty C? ph?n Thép Nam Kim', bf: 107800, sf: 57800 },
     'S99': { p: 7900, r: 7700, c: 8400, f: 7000, h: 7900, l: 7600, o: 7700, v: 21100, ex: 'HNX', n: 'Công ty c? ph?n SCI', bf: 0, sf: 0 },
     'ABT': { p: 51200, r: 51300, c: 54800, f: 47750, h: 51500, l: 50800, o: 51300, v: 3100, ex: 'HOSE', n: 'Công ty C? ph?n Xu?t nh?p kh?u Th?y s?n B?n Tre', bf: 0, sf: 0 },

@@ -163,11 +163,6 @@ const StockAPI = {
             foreignBuy: d.bf || 0,
             foreignSell: d.sf || 0,
             foreignNet: (d.bf || 0) - (d.sf || 0),
-            pe: pe,
-            pb: 1.6,
-            roe: '16.5%',
-            roa: '7.2%',
-            eps: eps,
             marketCap: marketCap,
             yearHigh: Math.round(cur * 1.25),
             yearLow: Math.round(cur * 0.78),
@@ -203,8 +198,6 @@ const StockAPI = {
             status = (!isIndex && currentPrice <= floorPrice) ? 'floor' : 'down';
         }
 
-        const eps = Math.max(800, Math.round(refPrice / 14));
-        const pe = eps > 0 ? Number((currentPrice / eps).toFixed(1)) : 14.5;
         const marketCap = currentPrice * 1000000000;
 
         return {
@@ -225,11 +218,6 @@ const StockAPI = {
             foreignBuy: meta.bf || Math.round(volume * 0.12),
             foreignSell: meta.sf || Math.round(volume * 0.08),
             foreignNet: (meta.bf && meta.sf) ? (meta.bf - meta.sf) : Math.round(volume * 0.04),
-            pe: pe,
-            pb: 1.6,
-            roe: '16.5%',
-            roa: '6.8%',
-            eps: eps,
             marketCap: marketCap,
             yearHigh: Math.round(currentPrice * 1.25),
             yearLow: Math.round(currentPrice * 0.78),
@@ -275,11 +263,6 @@ const StockAPI = {
             foreignBuy: 150000,
             foreignSell: 80000,
             foreignNet: 70000,
-            pe: 14.5,
-            pb: 1.5,
-            roe: '15.5%',
-            roa: '6.5%',
-            eps: 1750,
             marketCap: 25500 * 500000000,
             yearHigh: 31000,
             yearLow: 19500,
@@ -321,28 +304,6 @@ const StockAPI = {
 
         this.cache.set(cacheKey, { timestamp: Date.now(), data: results });
         return results;
-    },
-
-    /**
-     * Fetch Key Financial Ratios for a Ticker
-     */
-    async getFinancialRatios(symbol) {
-        const ticker = symbol.trim().toUpperCase();
-        const quote = await this.getStockQuote(ticker);
-
-        return {
-            ticker: ticker,
-            name: quote.name,
-            sector: quote.isIndex ? 'Chỉ số Thị trường' : `Doanh nghiệp Niêm yết (${quote.exchange})`,
-            pe: quote.pe,
-            pb: quote.pb,
-            roe: quote.roe,
-            roa: quote.roa,
-            eps: quote.eps,
-            marketCap: this.formatMarketCap(quote.marketCap),
-            yearHigh: quote.yearHigh,
-            yearLow: quote.yearLow
-        };
     },
 
     /**
