@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QPM Stock AI - Trợ Lý Chứng Khoán Việt Nam Realtime</title>
+    <meta name="description" content="Trợ lý AI phân tích và tra cứu dữ liệu chứng khoán Việt Nam (HOSE, HNX, UPCoM) thời gian thực kết nối Google Gemini API.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- TradingView Lightweight Charts Library -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ===== TOP HEADER ===== -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand-section">
+                <div class="brand-logo">📈</div>
+                <div>
+                    <div class="brand-title">
+                        QPM Stock AI <span class="brand-badge">Realtime</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-icon" id="btn-open-settings" title="Cài đặt API Key">
+                    <span class="status-dot" id="api-status-dot"></span>
+                    <span id="api-status-text">Cấu hình Gemini API</span>
+                    <span>⚙️</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Real-Time Market Ticker Tape -->
+        <div class="market-ticker-bar" id="market-ticker-bar">
+            <div class="ticker-item"><span class="ticker-name">Đang tải chỉ số thị trường...</span></div>
+        </div>
+    </header>
+
+    <!-- ===== MAIN WORKSPACE ===== -->
+    <main class="main-container">
+
+        <!-- Left Pane: AI Chat Terminal -->
+        <section class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-title-group">
+                    <div class="pulse-indicator"></div>
+                    <span style="font-weight: 700; font-size: 0.95rem;">Trợ Lý Phân Tích Gemini Pro (Tools Grounded)</span>
+                </div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Dữ liệu khớp lệnh trực tiếp</span>
+            </div>
+
+            <!-- Chat Stream -->
+            <div class="chat-messages" id="chat-messages">
+                <div class="message ai">
+                    <div class="message-avatar">⚡</div>
+                    <div class="message-content">
+                        Xin chào! Tôi là <strong>QPM Stock AI</strong>. Tôi được kết nối trực tiếp với bảng giá và dữ liệu giao dịch thời gian thực của thị trường chứng khoán Việt Nam (HOSE, HNX, UPCoM).<br/><br/>
+                        Bạn có thể hỏi tôi về:
+                        <ul>
+                            <li>Giá khớp lệnh, giá trần/sàn/tham chiếu của bất kỳ mã cổ phiếu nào (ví dụ: <code>FPT</code>, <code>HPG</code>, <code>SSI</code>).</li>
+                            <li>Tình hình thị trường và xu hướng chỉ số <code>VN-INDEX</code>, <code>VN30</code>.</li>
+                            <li>Phân tích định giá cơ bản (P/E, P/B, ROE, EPS) và dòng tiền khối ngoại.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Prompt Suggestions -->
+            <div class="prompt-chips" id="prompt-chips">
+                <button class="chip-btn" data-prompt="Giá FPT hôm nay thế nào? Khối ngoại giao dịch ra sao?">⚡ Giá FPT hôm nay</button>
+                <button class="chip-btn" data-prompt="Phân tích cổ phiếu HPG: Giá hiện tại, hỗ trợ kháng cự và định giá P/E">📊 Phân tích HPG</button>
+                <button class="chip-btn" data-prompt="Thị trường VN-INDEX và VN30 hôm nay diễn biến ra sao?">📈 Nhận định VN-INDEX</button>
+                <button class="chip-btn" data-prompt="So sánh định giá P/E, P/B và ROE giữa VCB và TCB">⚖️ So sánh VCB và TCB</button>
+                <button class="chip-btn" data-prompt="Top cổ phiếu vốn hóa lớn có kết quả kinh doanh tốt nhất">🏆 Top cổ phiếu dẫn dắt</button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chat-input" placeholder="Hỏi về mã cổ phiếu, VN-INDEX, định giá... (Nhấn Enter để gửi)" autocomplete="off" />
+                <button class="btn-send" id="btn-send">
+                    <span>Gửi</span>
+                    <span>➤</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Pane: Live Stock Inspector & Chart -->
+        <aside class="inspector-panel">
+            
+            <!-- Quick Search & Overview Card -->
+            <div class="panel-card">
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="search-input" placeholder="Nhập mã (FPT, HPG, SSI, VNM...)" maxlength="10" />
+                </div>
+
+                <div class="stock-hero">
+                    <div>
+                        <div class="hero-symbol" id="hero-symbol">FPT</div>
+                        <div class="hero-name" id="hero-name">Công ty Cổ phần FPT</div>
+                    </div>
+                    <div class="hero-price-box">
+                        <div class="hero-price up" id="hero-price">--</div>
+                        <div class="hero-change" id="hero-change">--</div>
+                    </div>
+                </div>
+
+                <!-- Timeframe Switcher & Chart -->
+                <div class="chart-header">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Biểu đồ kỹ thuật</span>
+                    <div class="timeframe-group">
+                        <button class="tf-btn" data-tf="1M">1M</button>
+                        <button class="tf-btn active" data-tf="3M">3M</button>
+                        <button class="tf-btn" data-tf="6M">6M</button>
+                        <button class="tf-btn" data-tf="1Y">1Y</button>
+                    </div>
+                </div>
+                
+                <div class="chart-viewport" id="stock-chart-container"></div>
+
+                <!-- Valuation Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-label">P/E</div>
+                        <div class="metric-value" id="metric-pe">--</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">P/B</div>
+                        <div class="metric-value" id="metric-pb">--</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">ROE</div>
+                        <div class="metric-value" id="metric-roe">--</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Khối Lượng</div>
+                        <div class="metric-value" id="metric-vol">--</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Khối Ngoại Ròng</div>
+                        <div class="metric-value" id="metric-foreign">--</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Thấp - Cao</div>
+                        <div class="metric-value" id="metric-highlow" style="font-size: 0.75rem;">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watchlist Panel -->
+            <div class="panel-card">
+                <div class="watchlist-header">
+                    <div class="watchlist-title">⭐ Danh Mục Theo Dõi</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Live Quote</span>
+                </div>
+                <div class="watchlist-items" id="watchlist-items">
+                    <!-- Items populated dynamically -->
+                </div>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- ===== SETTINGS / API KEY MODAL ===== -->
+    <div class="modal-overlay" id="api-key-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">🔑 Cấu Hình Google Gemini API</h3>
+                <button class="modal-close" id="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="input-api-key">Gemini API Key</label>
+                    <input type="password" class="form-input" id="input-api-key" placeholder="AIzaSy..." />
+                    <p class="form-help">
+                        API Key được lưu an toàn trong trình duyệt (<code>localStorage</code>) của bạn.
+                        <br/>Nhận miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #c084fc; text-decoration: underline;">Google AI Studio</a>.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="form-label" for="select-model">Mô hình AI</label>
+                        <button type="button" id="btn-fetch-models" style="background: none; border: none; color: #38bdf8; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">🔄 Tự động dò danh sách Model</button>
+                    </div>
+                    <select class="form-select" id="select-model">
+                        <option value="gemini-3.6-flash" selected>gemini-3.6-flash (Khuyên dùng - Nhanh & Tối ưu)</option>
+                        <option value="gemini-3.7-flash">gemini-3.7-flash (Thế hệ mới nhất - Suy luận cao cấp)</option>
+                        <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Siêu tốc & Tiết kiệm)</option>
+                        <option value="gemini-3.1-pro">gemini-3.1-pro (Phân tích chuyên sâu)</option>
+                        <option value="gemini-2.0-flash">gemini-2.0-flash (Thế hệ 2.0)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Thế hệ 1.5 Legacy)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <button class="btn-secondary" id="btn-test-api" type="button">⚡ Kiểm tra kết nối</button>
+                    <span id="test-result" style="font-size: 0.82rem; font-weight: 500;"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="btn-save-settings">Lưu Cấu Hình</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="stock-data.js"></script>
+    <script src="stock-api.js"></script>
+    <script src="gemini-agent.js"></script>
+    <script src="chart-manager.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
