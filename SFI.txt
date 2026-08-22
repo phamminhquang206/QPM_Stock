@@ -1,0 +1,102 @@
+//@version=5
+indicator("SFI MULTI-STRRENGTH INDEPENDENT LINES", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// ==========================================
+// ĐƯỜNG 1: NADARAYA-WATSON BASELINE (KERNEL REGRESSION)
+// Điểm mạnh: Đường trung tâm mượt mà, phản ánh giá trị thực của xu hướng.
+// ==========================================
+nw_h = input.float(8.0, "1. NW Bandwidth", group="NW Baseline")
+gauss(x, h) => math.exp(-(math.pow(x, 2)/(h * h * 2)))
+var nw_coefs = array.new_float(0)
+var nw_den = 0.0
+if barstate.isfirst
+    for i = 0 to 499
+        nw_w = gauss(i, nw_h)
+        nw_coefs.push(nw_w)
+    nw_den := nw_coefs.sum()
+nw_out = 0.0
+for i = 0 to 499
+    nw_out += nz(close[i]) * nw_coefs.get(i)
+nw_out /= nw_den
+plot(nw_out, "NW Baseline", color=color.new(color.yellow, 0), linewidth=3, title="Nadaraya-Watson Baseline")
+
+
+// ==========================================
+// ĐƯỜNG 2: SMART TRAIL - TFL (TREND FLOW LINE)
+// Điểm mạnh: Sự kết hợp giữa HMA và DWMA, bám sát cấu trúc dòng tiền.
+// ==========================================
+st_len = input.int(24, "2. Smart Trail Length", group="Smart Trail")
+f_calcTFL(source, len) =>
+    hmaLen = int(len * 0.8)
+    hma = ta.wma(2 * ta.wma(source, hmaLen / 2) - ta.wma(source, hmaLen), math.floor(math.sqrt(hmaLen)))
+    w1 = math.round(len / 3)
+    dwma = ta.wma(ta.wma(source, w1), w1)
+    math.avg(hma, dwma)
+st_line = f_calcTFL(close, st_len)
+plot(st_line, "Smart Trail TFL", color=st_line > st_line[1] ? color.aqua : color.orange, linewidth=2, style=plot.style_stepline, title="Smart Trail (SFI Core)")
+
+
+// ==========================================
+// ĐƯỜNG 3: UT BOT TRAILING STOP (CHANDELIER)
+// Điểm mạnh: Xác định điểm cắt lỗ và đảo chiều dựa trên ATR (biến động).
+// ==========================================
+ut_key = input.float(2.0, "3. UT Bot Key Value", group="UT Bot")
+ut_atr_p = input.int(10, "UT Bot ATR Period", group="UT Bot")
+ut_nLoss = ut_key * ta.atr(ut_atr_p)
+var float ut_stop = 0.0
+ut_stop := close > nz(ut_stop[1], 0) and close[1] > nz(ut_stop[1], 0) ? math.max(nz(ut_stop[1]), close - ut_nLoss) : close < nz(ut_stop[1], 0) and close[1] < nz(ut_stop[1], 0) ? math.min(nz(ut_stop[1]), close + ut_nLoss) : close > nz(ut_stop[1], 0) ? close - ut_nLoss : close + ut_nLoss
+plot(ut_stop, "UT Bot Stop", color=color.new(color.fuchsia, 20), linewidth=1, style=plot.style_linebr, title="UT Bot Trailing Stop")
+
+
+// ==========================================
+// ĐƯỜNG 4: KALMAN VOLUME TREND (KVT)
+// Điểm mạnh: Lọc nhiễu thống kê bằng thuật toán Kalman, tích hợp khối lượng.
+// ==========================================
+k_q = input.float(0.0005, "4. Kalman Process Noise", group="Kalman Filter")
+k_r = input.float(0.4, "Kalman Measurement Noise", group="Kalman Filter")
+f_kalman(src, q, r) =>
+    var float x = na, var float p = na, var float k = na
+    if na(x)
+        x := src, p := 1.0
+    p := p + q
+    k := p / (p + r)
+    x := x + k * (src - x)
+    p := (1 - k) * p
+    x
+kalman_line = f_kalman(close, k_q, k_r)
+plot(kalman_line, "Kalman Trend", color=color.new(color.white, 30), linewidth=2, title="Kalman Noise Filter")
+
+
+// ==========================================
+// ĐƯỜNG 5: ORACLE CONSENSUS RIBBON (ORACLE SCORE)
+// Điểm mạnh: Hệ thống chấm điểm đồng thuận từ 25 chỉ báo.
+// ==========================================
+rsi = ta.rsi(close, 14), [macd, sig, _] = ta.macd(close, 12, 26, 9)
+[st_v, st_d] = ta.supertrend(3, 10)
+oracle_score = (close > ta.ema(close, 20) ? 1 : 0) + (ta.ema(close, 20) > ta.ema(close, 50) ? 1 : 0) + 
+               (rsi > 50 ? 1 : 0) + (macd > sig ? 1 : 0) + (st_d == -1 ? 1 : 0) + (close > ta.sar(0.02,0.02,0.2) ? 1 : 0)
+// Hiển thị dạng Chấm (Dots) dưới nến để không đè lên nến
+plot(ta.sma(close, 5), "Oracle Ribbon", color=oracle_score >= 4 ? color.lime : color.red, linewidth=4, style=plot.style_circles, title="Oracle Consensus Score")
+
+// ==========================================
+// SMC BREAKOUT (BOS) - ĐIỂM NHẤN CẤU TRÚC
+// ==========================================
+ph = ta.pivothigh(high, 5, 5)
+pl = ta.pivotlow(low, 5, 5)
+var float last_h = na
+var float last_l = na
+if ph
+    last_h := high[5]
+    line.new(bar_index[5], last_h, bar_index, last_h, color=color.gray, style=line.style_dashed)
+if pl
+    last_l := low[5]
+    line.new(bar_index[5], last_l, bar_index, last_l, color=color.gray, style=line.style_dashed)
+
+// BẢNG CHỈ DẪN (LEGEND)
+var table legend = table.new(position.bottom_left, 1, 5, bgcolor=color.new(color.black, 70), border_width=1)
+if barstate.islast
+    table.cell(legend, 0, 0, "Vàng: NW Baseline (Hồi quy)", text_color=color.yellow, text_size=size.tiny)
+    table.cell(legend, 0, 1, "Xanh/Cam: Smart Trail (Dòng tiền)", text_color=color.aqua, text_size=size.tiny)
+    table.cell(legend, 0, 2, "Tím: UT Bot (Cắt lỗ động)", text_color=color.fuchsia, text_size=size.tiny)
+    table.cell(legend, 0, 3, "Trắng: Kalman (Lọc nhiễu)", text_color=color.white, text_size=size.tiny)
+    table.cell(legend, 0, 4, "Chấm: Oracle Consensus (Đồng thuận)", text_color=color.lime, text_size=size.tiny)
