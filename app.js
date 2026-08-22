@@ -460,4 +460,53 @@ document.addEventListener('DOMContentLoaded', () => {
         html = html.replace(/\n/g, '<br/>');
         return html;
     }
+
+    // ===== 7. PROGRESSIVE WEB APP (PWA) REGISTRATION & INSTALLATION =====
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then((reg) => {
+                    console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+                })
+                .catch((err) => {
+                    console.warn('[PWA] Service Worker registration failed:', err);
+                });
+        });
+    }
+
+    // Handle 1-Click PWA Installation (Desktop / Android Chrome / Samsung Internet)
+    let deferredPwaPrompt = null;
+    const btnPwaInstall = document.getElementById('btn-pwa-install');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPwaPrompt = e;
+        // Show install button in header
+        if (btnPwaInstall) {
+            btnPwaInstall.style.display = 'inline-flex';
+        }
+    });
+
+    if (btnPwaInstall) {
+        btnPwaInstall.addEventListener('click', async () => {
+            if (!deferredPwaPrompt) return;
+            // Show native install prompt
+            deferredPwaPrompt.prompt();
+            // Wait for user response
+            const { outcome } = await deferredPwaPrompt.userChoice;
+            console.log(`[PWA] User response to the install prompt: ${outcome}`);
+            // Reset prompt
+            deferredPwaPrompt = null;
+            btnPwaInstall.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] QPM Stock App installed successfully!');
+        if (btnPwaInstall) btnPwaInstall.style.display = 'none';
+        deferredPwaPrompt = null;
+    });
 });

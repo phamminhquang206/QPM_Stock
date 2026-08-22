@@ -2,9 +2,23 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QPM Stock AI - Trợ Lý Chứng Khoán Việt Nam Realtime</title>
     <meta name="description" content="Trợ lý AI phân tích và tra cứu dữ liệu chứng khoán Việt Nam (HOSE, HNX, UPCoM) thời gian thực kết nối Google Gemini API.">
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b0e14">
+    
+    <!-- Apple iOS Safari PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QPM Stock">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+    <link rel="alternate icon" type="image/png" href="assets/icons/icon-192.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +43,12 @@
             </div>
 
             <div class="header-actions">
+                <!-- PWA Install Button (Displays when browser supports 1-click install) -->
+                <button class="btn-icon" id="btn-pwa-install" style="display: none; background: rgba(0, 208, 132, 0.12); border-color: rgba(0, 208, 132, 0.35); color: #00d084;" title="Cài đặt QPM Stock vào màn hình chính">
+                    <span>📲</span>
+                    <span class="btn-pwa-text">Cài App</span>
+                </button>
+
                 <button class="btn-icon" id="btn-open-settings" title="Cài đặt API Key">
                     <span class="status-dot" id="api-status-dot"></span>
                     <span id="api-status-text">Cấu hình Gemini API</span>

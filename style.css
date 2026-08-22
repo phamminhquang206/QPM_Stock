@@ -985,3 +985,19 @@ body {
     font-weight: 600;
 }
 
+/* PWA Button Styling */
+#btn-pwa-install {
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+#btn-pwa-install:hover {
+    background: rgba(0, 208, 132, 0.25) !important;
+    border-color: rgba(0, 208, 132, 0.6) !important;
+    transform: translateY(-1px);
+}
+@media (max-width: 480px) {
+    .btn-pwa-text {
+        display: none;
+    }
+}
+

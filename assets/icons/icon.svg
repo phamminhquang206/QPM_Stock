@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0e14"/>
+      <stop offset="100%" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#00d084"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+  
+  <!-- Outer Neon Ring -->
+  <circle cx="256" cy="256" r="215" fill="none" stroke="#00d084" stroke-width="8" opacity="0.85" filter="url(#glow)" />
+  
+  <!-- Candlesticks -->
+  <!-- Candle 1 -->
+  <line x1="190" y1="190" x2="190" y2="300" stroke="#00d084" stroke-width="8" stroke-linecap="round" />
+  <rect x="175" y="210" width="30" height="60" rx="4" fill="#00d084" />
+  
+  <!-- Candle 2 -->
+  <line x1="315" y1="130" x2="315" y2="260" stroke="#00d084" stroke-width="8" stroke-linecap="round" />
+  <rect x="300" y="150" width="30" height="75" rx="4" fill="#00d084" />
+  
+  <!-- Trend Line -->
+  <polyline points="110,340 200,250 290,280 400,140" fill="none" stroke="url(#lineGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" />
+  
+  <!-- Peak Dot -->
+  <circle cx="400" cy="140" r="20" fill="#00d084" filter="url(#glow)" />
+  
+  <!-- Text QPM -->
+  <text x="256" y="425" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="76" font-weight="900" fill="#ffffff" letter-spacing="4">QPM</text>
+</svg>

@@ -1,0 +1,55 @@
+{
+  "name": "QPM Stock AI - Trợ Lý Chứng Khoán",
+  "short_name": "QPM Stock",
+  "description": "Nền tảng trợ lý AI và theo dõi bảng giá chứng khoán Việt Nam thời gian thực (HOSE, HNX, UPCoM)",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "lang": "vi",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mở Bảng Giá FPT",
+      "short_name": "FPT",
+      "description": "Xem phân tích và bảng giá FPT",
+      "url": "./index.html?ticker=FPT",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mở Bảng Giá HPG",
+      "short_name": "HPG",
+      "description": "Xem phân tích và bảng giá HPG",
+      "url": "./index.html?ticker=HPG",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
