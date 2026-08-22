@@ -11,9 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     
-    <!-- TradingView Lightweight Charts Library -->
-    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -77,16 +74,16 @@
 
             <!-- Quick Prompt Suggestions -->
             <div class="prompt-chips" id="prompt-chips">
-                <button class="chip-btn" data-prompt="Giá FPT hôm nay thế nào? Khối ngoại giao dịch ra sao?">⚡ Giá FPT hôm nay</button>
-                <button class="chip-btn" data-prompt="Phân tích cổ phiếu HPG: Giá hiện tại, hỗ trợ kháng cự và định giá P/E">📊 Phân tích HPG</button>
-                <button class="chip-btn" data-prompt="Thị trường VN-INDEX và VN30 hôm nay diễn biến ra sao?">📈 Nhận định VN-INDEX</button>
+                <button class="chip-btn" data-prompt="Phân tích kỹ thuật mã FPT hôm nay: xu hướng, hỗ trợ, kháng cự">📈 Phân tích kỹ thuật FPT</button>
+                <button class="chip-btn" data-prompt="Giá HPG hôm nay thế nào? Dòng tiền khối ngoại mua bán ra sao?">⚡ Giá HPG & Khối ngoại</button>
+                <button class="chip-btn" data-prompt="Thị trường VN-INDEX và VN30 hôm nay diễn biến ra sao?">📊 Nhận định VN-INDEX</button>
                 <button class="chip-btn" data-prompt="So sánh định giá P/E, P/B và ROE giữa VCB và TCB">⚖️ So sánh VCB và TCB</button>
-                <button class="chip-btn" data-prompt="Top cổ phiếu vốn hóa lớn có kết quả kinh doanh tốt nhất">🏆 Top cổ phiếu dẫn dắt</button>
+                <button class="chip-btn" data-prompt="Cổ phiếu nào thuộc nhóm Chứng khoán đang có điểm mua tốt?">💡 Tìm điểm mua Chứng khoán</button>
             </div>
 
             <!-- Input Area -->
             <div class="chat-input-area">
-                <input type="text" class="chat-input" id="chat-input" placeholder="Hỏi về mã cổ phiếu, VN-INDEX, định giá... (Nhấn Enter để gửi)" autocomplete="off" />
+                <input type="text" class="chat-input" id="chat-input" placeholder="Hỏi về mã cổ phiếu, phân tích kỹ thuật, định giá... (Nhấn Enter để gửi)" autocomplete="off" />
                 <button class="btn-send" id="btn-send">
                     <span>Gửi</span>
                     <span>➤</span>
@@ -115,18 +112,30 @@
                     </div>
                 </div>
 
-                <!-- Timeframe Switcher & Chart -->
-                <div class="chart-header">
-                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Biểu đồ kỹ thuật</span>
-                    <div class="timeframe-group">
-                        <button class="tf-btn" data-tf="1M">1M</button>
-                        <button class="tf-btn active" data-tf="3M">3M</button>
-                        <button class="tf-btn" data-tf="6M">6M</button>
-                        <button class="tf-btn" data-tf="1Y">1Y</button>
+                <!-- FireAnt Live Dashboard Integration -->
+                <div class="fireant-banner-card">
+                    <div class="fa-banner-top">
+                        <div class="fa-brand-info">
+                            <div class="fa-flame-icon">🔥</div>
+                            <div>
+                                <div class="fa-title">Biểu đồ & Bảng giá <span class="fa-ticker-tag" id="fa-target-symbol">FPT</span></div>
+                                <div class="fa-subtitle">Nền tảng chứng khoán FireAnt (Web & App)</div>
+                            </div>
+                        </div>
+                        <span class="fa-live-badge">⚡ FireAnt Pro</span>
+                    </div>
+
+                    <div class="fa-action-buttons">
+                        <button type="button" class="btn-fireant-main" id="btn-fireant-launch" onclick="window.openFireAnt(window.currentStockTicker || 'FPT')">
+                            <span class="fa-btn-icon">🚀</span>
+                            <span>Mở trên FireAnt (Web & App)</span>
+                            <span class="fa-arrow">↗</span>
+                        </button>
+                        <a id="link-fireant-direct" href="https://fireant.vn/dashboard/content/symbols/FPT" target="_blank" rel="noopener noreferrer" class="btn-fireant-link" title="Mở trang FireAnt Web trong tab mới">
+                            🌐 Web
+                        </a>
                     </div>
                 </div>
-                
-                <div class="chart-viewport" id="stock-chart-container"></div>
 
                 <!-- Valuation Metrics Grid -->
                 <div class="metrics-grid">
@@ -219,7 +228,6 @@
     <script src="stock-data.js"></script>
     <script src="stock-api.js"></script>
     <script src="gemini-agent.js"></script>
-    <script src="chart-manager.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

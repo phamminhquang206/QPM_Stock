@@ -5,7 +5,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize Components
     const agent = new window.GeminiStockAgent();
-    const chart = new window.StockChartManager('stock-chart-container');
     
     // UI Elements
     const chatMessages = document.getElementById('chat-messages');
@@ -40,10 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const watchlistContainer = document.getElementById('watchlist-items');
 
     let currentSelectedTicker = 'FPT';
+    window.currentStockTicker = 'FPT';
     const defaultWatchlist = ['FPT', 'HPG', 'SSI', 'PVS', 'SHS', 'BSR', 'ACV', 'MCH'];
 
-    // 2. Setup Chart & Initial Load
-    chart.init();
+    // 2. Initial Load
     loadTickerToInspector('FPT');
     loadMarketTicker();
     loadWatchlist();
@@ -231,15 +230,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const netSign = net > 0 ? '+' : '';
             metricForeign.textContent = `${netSign}${window.StockAPI.formatVolume(net)}`;
             metricForeign.style.color = net > 0 ? '#00d084' : net < 0 ? '#ff4d4f' : '#94a3b8';
-            
             metricHighLow.textContent = `${window.StockAPI.formatNumber(quote.lowestPrice)} - ${window.StockAPI.formatNumber(quote.highestPrice)}`;
+            
+            // Update FireAnt dynamic target links
+            updateFireAntLinks(currentSelectedTicker);
 
-            // Load Chart
-            chart.loadStockData(currentSelectedTicker, 90);
         } catch (e) {
             console.error(`Failed to load ticker ${symbol}:`, e);
             heroName.textContent = 'Không tìm thấy dữ liệu';
         }
+    }
+
+    function updateFireAntLinks(symbol) {
+        const sym = (symbol || 'FPT').toUpperCase();
+        window.currentStockTicker = sym;
+        const faTargetSymbol = document.getElementById('fa-target-symbol');
+        const linkFireAntDirect = document.getElementById('link-fireant-direct');
+        if (faTargetSymbol) faTargetSymbol.textContent = sym;
+        if (linkFireAntDirect) linkFireAntDirect.href = `https://fireant.vn/dashboard/content/symbols/${sym}`;
     }
 
     // Search bar listener
@@ -251,17 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchInput.value = '';
             }
         }
-    });
-
-    // Timeframe selector buttons
-    document.querySelectorAll('.tf-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const tf = btn.dataset.tf;
-            const daysMap = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
-            chart.loadStockData(currentSelectedTicker, daysMap[tf] || 90);
-        });
     });
 
     // 7. Chat Message Handling
@@ -291,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (toolName === 'get_market_indices') msg = `⚡ Đang truy vấn diễn biến chỉ số VN-INDEX, VN30`;
         if (toolName === 'get_financial_ratios') msg = `📊 Đang phân tích chỉ số tài chính (P/E, ROE, EPS) cho: ${args.symbol}`;
         if (toolName === 'get_stock_history') msg = `📈 Đang tính toán dữ liệu lịch sử giá cho: ${args.symbol}`;
+        if (toolName === 'get_financial_statements') msg = `📑 Đang đọc Báo cáo tài chính (${args.period_type === 'year' ? 'theo Năm' : 'theo Quý'}) của ${args.symbol}`;
 
         if (currentToolPill) {
             currentToolPill.textContent = msg;
@@ -334,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentToolPill = null;
             }
 
-            // Render embedded stock card if quote was retrieved
+            // Render embedded stock card if retrieved
             if (result.toolsGathered) {
                 result.toolsGathered.forEach(item => {
                     if (item.type === 'quote') {
@@ -393,7 +391,10 @@ document.addEventListener('DOMContentLoaded', () => {
         card.innerHTML = `
             <div class="csc-header">
                 <div class="csc-ticker">${q.ticker} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(${q.exchange}) - ${q.name}</span></div>
-                <span class="brand-badge" style="cursor:pointer;" onclick="window.inspectStock('${q.ticker}')">🔍 Xem biểu đồ</span>
+                <div style="display:flex; gap:6px;">
+                    <span class="brand-badge" style="cursor:pointer;" onclick="window.inspectStock('${q.ticker}')">🔍 Tra cứu</span>
+                    <span class="brand-badge" style="cursor:pointer; background:rgba(249, 115, 22, 0.2); color:#fb923c; border-color:rgba(249,115,22,0.4);" onclick="window.openFireAnt('${q.ticker}')">🔥 FireAnt ↗</span>
+                </div>
             </div>
             <div class="csc-price-row">
                 <span class="csc-price ${q.status}">${window.StockAPI.formatNumber(q.currentPrice)}</span>
@@ -424,6 +425,50 @@ document.addEventListener('DOMContentLoaded', () => {
     // Global helper to inspect stock from chat card
     window.inspectStock = (ticker) => {
         loadTickerToInspector(ticker);
+    };
+
+    // Global FireAnt Launcher (Handles Mobile App Jump & Web Dashboard)
+    window.openFireAnt = (ticker) => {
+        const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
+        const webUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
+        const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || navigator.vendor || window.opera);
+
+        if (isMobile) {
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+            // Record start time to detect if app opened successfully
+            const startTime = Date.now();
+            let opened = false;
+
+            const handleVisibilityChange = () => {
+                if (document.hidden || document.webkitHidden) {
+                    opened = true;
+                }
+            };
+            document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
+
+            // Fallback timeout to open Web if mobile app is not installed
+            setTimeout(() => {
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                if (!opened && Date.now() - startTime < 2500) {
+                    window.location.href = webUrl;
+                }
+            }, 1200);
+
+            if (isAndroid) {
+                // Try Android Intent URL for FireAnt App
+                window.location.href = `intent://fireant.vn/dashboard/content/symbols/${symbol}#Intent;scheme=https;package=vn.fireant.mobile;S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+            } else if (isIOS) {
+                // Try iOS Universal Link / Custom Scheme
+                window.location.href = `fireant://symbols/${symbol}`;
+            } else {
+                window.location.href = `fireant://symbols/${symbol}`;
+            }
+        } else {
+            // Desktop Browser: Open directly in a new tab
+            window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
     };
 
     function escapeHTML(str) {

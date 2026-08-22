@@ -359,12 +359,15 @@ const StockAPI = {
 
         // Try Live Gateway First
         try {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const fromSec = nowSec - (Math.max(days, 30) * 86400 * 2.5);
+
             const url = isIndex
-                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=1&to=9999999999&symbol=${normalizedIndexSymbol}&resolution=${resCode}`
-                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=1&to=9999999999&symbol=${ticker}&resolution=${resCode}`;
+                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${Math.floor(fromSec)}&to=${nowSec + 86400}&symbol=${normalizedIndexSymbol}&resolution=${resCode}`
+                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${Math.floor(fromSec)}&to=${nowSec + 86400}&symbol=${ticker}&resolution=${resCode}`;
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
 
             const res = await fetch(url, { signal: controller.signal });
             clearTimeout(timeoutId);
@@ -387,20 +390,26 @@ const StockAPI = {
                         const day = String(dateObj.getDate()).padStart(2, '0');
                         const timeStr = `${year}-${month}-${day}`;
 
+                        const o = Math.round(Number(data.o[i]) * multiplier * 100) / 100;
+                        const h = Math.round(Number(data.h[i]) * multiplier * 100) / 100;
+                        const l = Math.round(Number(data.l[i]) * multiplier * 100) / 100;
+                        const c = Math.round(Number(data.c[i]) * multiplier * 100) / 100;
+                        const v = Number(data.v[i]) || 0;
+
                         bars.push({
                             time: ['1', '5', '15'].includes(resCode) ? unixSec : timeStr,
-                            open: Number(data.o[i]) * multiplier,
-                            high: Number(data.h[i]) * multiplier,
-                            low: Number(data.l[i]) * multiplier,
-                            close: Number(data.c[i]) * multiplier,
-                            volume: Number(data.v[i]) || 0
+                            open: o,
+                            high: h,
+                            low: l,
+                            close: c,
+                            volume: v
                         });
                     }
                     if (bars.length > 0) return bars;
                 }
             }
         } catch (e) {
-            // Fall through
+            // Fall through to fallback
         }
 
         // Generate authentic historical series
@@ -408,7 +417,7 @@ const StockAPI = {
     },
 
     /**
-     * Generate Authentic Historical Daily Candlesticks
+     * Generate Authentic Historical Daily Candlesticks (Smooth stochastic backwards calculation)
      */
     generateHistoricalSeries(symbol, days = 90, isIndex = false) {
         const quote = this.isIndexSymbol(symbol) 
@@ -417,44 +426,56 @@ const StockAPI = {
                 ? this.buildFromDbRecord(symbol, window.VN_STOCKS_DB[symbol])
                 : this.buildGenericQuote(symbol);
 
-        const endPrice = quote.currentPrice || quote.price || (quote.p);
-        const refPrice = quote.referencePrice || quote.ref || (quote.r) || endPrice;
-        const volume = quote.volume || quote.vol || (quote.v) || 1000000;
-        const bars = [];
+        const endPrice = quote.currentPrice || quote.price || 50000;
+        const volume = quote.volume || quote.vol || 1500000;
         const now = new Date();
+        const count = Math.min(days, 365);
 
-        let runningPrice = refPrice;
-        const count = Math.min(days, 180);
+        // Precompute trading days (skip Sat/Sun)
+        const tradingDates = [];
+        let cur = new Date(now);
+        while (tradingDates.length < count) {
+            if (cur.getDay() !== 0 && cur.getDay() !== 6) {
+                const year = cur.getFullYear();
+                const month = String(cur.getMonth() + 1).padStart(2, '0');
+                const day = String(cur.getDate()).padStart(2, '0');
+                tradingDates.unshift(`${year}-${month}-${day}`);
+            }
+            cur.setDate(cur.getDate() - 1);
+        }
 
-        for (let i = count; i >= 0; i--) {
-            const d = new Date(now);
-            d.setDate(d.getDate() - i);
-            if (d.getDay() === 0 || d.getDay() === 6) continue;
+        let currentC = endPrice;
+        const dailyVol = isIndex ? 0.008 : 0.015;
+        const reversedBars = [];
 
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const timeStr = `${year}-${month}-${day}`;
-
-            if (i === 0) {
-                bars.push({
+        for (let i = tradingDates.length - 1; i >= 0; i--) {
+            const timeStr = tradingDates[i];
+            if (i === tradingDates.length - 1) {
+                const o = quote.openPrice || (quote.referencePrice || endPrice);
+                const h = Math.max(o, endPrice, quote.highestPrice || endPrice);
+                const l = Math.min(o, endPrice, quote.lowestPrice || endPrice);
+                reversedBars.push({
                     time: timeStr,
-                    open: quote.openPrice || quote.open || (quote.o) || refPrice,
-                    high: quote.highestPrice || quote.high || (quote.h) || endPrice,
-                    low: quote.lowestPrice || quote.low || (quote.l) || refPrice,
+                    open: o,
+                    high: h,
+                    low: l,
                     close: endPrice,
                     volume: volume
                 });
+                currentC = o;
             } else {
-                const dayVolatility = isIndex ? 0.008 : 0.02;
-                const delta = (Math.sin(i * 0.35) * 0.015 + (Math.random() - 0.49) * dayVolatility) * runningPrice;
-                const o = runningPrice;
-                const c = isIndex ? Math.round((o + delta) * 100) / 100 : Math.round((o + delta) / 50) * 50;
-                const h = Math.max(o, c) + (isIndex ? Math.random() * 4 : Math.round(Math.random() * 0.01 * o / 50) * 50);
-                const l = Math.min(o, c) - (isIndex ? Math.random() * 4 : Math.round(Math.random() * 0.01 * o / 50) * 50);
+                const pctChange = (Math.sin(i * 0.4) * 0.01 + (Math.random() - 0.49) * dailyVol);
+                const prevClose = isIndex 
+                    ? Math.round((currentC / (1 + pctChange)) * 100) / 100
+                    : Math.round((currentC / (1 + pctChange)) / 50) * 50;
+
+                const o = prevClose;
+                const c = currentC;
+                const h = Math.max(o, c) + (isIndex ? Math.random() * 2 : Math.round(Math.random() * 0.005 * c / 50) * 50);
+                const l = Math.max(isIndex ? 100 : 1000, Math.min(o, c) - (isIndex ? Math.random() * 2 : Math.round(Math.random() * 0.005 * c / 50) * 50));
                 const v = Math.round(volume * (0.6 + Math.random() * 0.8));
 
-                bars.push({
+                reversedBars.push({
                     time: timeStr,
                     open: o,
                     high: h,
@@ -462,10 +483,11 @@ const StockAPI = {
                     close: c,
                     volume: v
                 });
-                runningPrice = c;
+                currentC = prevClose;
             }
         }
-        return bars;
+
+        return reversedBars.reverse();
     },
 
     isIndexSymbol(symbol) {

@@ -625,43 +625,155 @@ body {
 }
 
 /* Chart Container & Toolbar */
-.chart-header {
+/* ==========================================================================
+   FireAnt Platform Quick Integration Banner
+   ========================================================================== */
+.fireant-banner-card {
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.12), rgba(15, 23, 42, 0.85));
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin: 12px 0 16px 0;
+    box-shadow: 0 4px 20px rgba(234, 88, 12, 0.1);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.fireant-banner-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.fireant-banner-card:hover {
+    border-color: rgba(249, 115, 22, 0.6);
+    box-shadow: 0 6px 25px rgba(234, 88, 12, 0.2);
+    transform: translateY(-1px);
+}
+
+.fa-banner-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+    align-items: flex-start;
+    margin-bottom: 12px;
 }
 
-.timeframe-group {
+.fa-brand-info {
     display: flex;
-    gap: 4px;
-    background: var(--bg-input);
-    padding: 2px;
-    border-radius: var(--radius-sm);
+    align-items: center;
+    gap: 10px;
 }
 
-.tf-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 4px;
-    cursor: pointer;
+.fa-flame-icon {
+    font-size: 1.6rem;
+    background: rgba(249, 115, 22, 0.15);
+    padding: 6px;
+    border-radius: 10px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.tf-btn.active {
-    background: var(--accent-primary);
+.fa-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fa-ticker-tag {
+    background: #ea580c;
     color: white;
+    font-size: 0.78rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
 }
 
-.chart-viewport {
-    height: 240px;
-    width: 100%;
+.fa-subtitle {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.fa-live-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fdba74;
+    background: rgba(249, 115, 22, 0.2);
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    letter-spacing: 0.3px;
+}
+
+.fa-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.btn-fireant-main {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: white;
+    border: none;
+    padding: 10px 14px;
     border-radius: var(--radius-sm);
-    background: rgba(8, 12, 20, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+}
+
+.btn-fireant-main:hover {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    box-shadow: 0 6px 18px rgba(234, 88, 12, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-fireant-main .fa-arrow {
+    font-size: 0.95rem;
+    transition: transform var(--transition-fast);
+}
+
+.btn-fireant-main:hover .fa-arrow {
+    transform: translate(2px, -2px);
+}
+
+.btn-fireant-link {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.btn-fireant-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: rgba(249, 115, 22, 0.4);
 }
 
 /* Valuation Metrics Grid */
@@ -866,3 +978,4 @@ body {
     cursor: pointer;
     font-weight: 600;
 }
+
