@@ -426,30 +426,19 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickerToInspector(ticker);
     };
 
-    // Global FireAnt Launcher (Jump to FireAnt App with Smart Web Fallback)
+    // Global FireAnt Launcher
+    // Note: FireAnt native app does NOT support deep linking to specific stock symbols.
+    // On mobile, we open the responsive web view directly (always lands on the correct stock page).
     window.openFireAnt = (ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
-        const mobileWebUrl = `https://fireant.vn/dashboard/symbols/${symbol}`;
-        const desktopWebUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        if (isAndroid) {
-            // Android (Brave / Samsung Internet / Chrome): Use Android Intent to launch FireAnt App directly
-            // with automatic fallback to responsive mobile web if app is not installed
-            const intentUrl = `intent://fireant.vn/dashboard/symbols/${symbol}#Intent;scheme=https;package=vn.fireant.mobile;S.browser_fallback_url=${encodeURIComponent(mobileWebUrl)};end`;
-            window.location.href = intentUrl;
-        } else if (isIOS) {
-            // iOS (Safari / Chrome iOS): Try custom app scheme with fallback to mobile web
-            const schemeUrl = `fireant://symbols/${symbol}`;
-            window.location.href = schemeUrl;
-            setTimeout(() => {
-                window.location.href = mobileWebUrl;
-            }, 1000);
+        if (isMobile) {
+            // Mobile: Open responsive single-column web view (fits phone screens, correct symbol)
+            window.open(`https://fireant.vn/dashboard/symbols/${symbol}`, '_blank');
         } else {
-            // Desktop Browser: Open Pro Multi-Widget Dashboard in new tab
-            window.open(desktopWebUrl, '_blank', 'noopener,noreferrer');
+            // Desktop: Open full pro multi-widget dashboard
+            window.open(`https://fireant.vn/dashboard/content/symbols/${symbol}`, '_blank', 'noopener,noreferrer');
         }
     };
 
