@@ -228,7 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 metricForeignBuySell.textContent = `${window.StockAPI.formatVolume(quote.foreignBuy)} / ${window.StockAPI.formatVolume(quote.foreignSell)}`;
             }
             if (metricHighLow) {
-                metricHighLow.textContent = `${window.StockAPI.formatNumber(quote.lowestPrice)} - ${window.StockAPI.formatNumber(quote.highestPrice)}`;
+                const low = quote.lowestPrice || quote.currentPrice || quote.referencePrice || 0;
+                const high = quote.highestPrice || quote.currentPrice || quote.referencePrice || 0;
+                metricHighLow.innerHTML = `<span style="color:var(--color-down, #ff4d4f);">${window.StockAPI.formatNumber(low)}</span> - <span style="color:var(--color-up, #00d084);">${window.StockAPI.formatNumber(high)}</span>`;
             }
             
             // Update FireAnt dynamic target links
@@ -424,27 +426,18 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickerToInspector(ticker);
     };
 
-    // Global FireAnt Launcher (Handles Mobile App Jump & Web Dashboard)
+    // Global FireAnt Launcher (Handles Mobile & Desktop Optimized Layouts)
     window.openFireAnt = (ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
-        const webUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
         const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || navigator.vendor || window.opera);
+        
+        // Mobile layout: `https://fireant.vn/dashboard/symbols/{symbol}` (Responsive single-column)
+        // Desktop layout: `https://fireant.vn/dashboard/content/symbols/{symbol}` (Pro 4-column)
+        const targetUrl = isMobile
+            ? `https://fireant.vn/dashboard/symbols/${symbol}`
+            : `https://fireant.vn/dashboard/content/symbols/${symbol}`;
 
-        if (isMobile) {
-            // Target direct symbol route for FireAnt Mobile App
-            const appSchemeUrl = `fireant://symbols/${symbol}`;
-            
-            // Try custom app scheme to jump directly into the stock's view
-            window.location.href = appSchemeUrl;
-
-            // Fallback timeout to open web view if scheme fails
-            setTimeout(() => {
-                window.location.href = webUrl;
-            }, 800);
-        } else {
-            // Desktop Browser: Open directly in a new tab
-            window.open(webUrl, '_blank', 'noopener,noreferrer');
-        }
+        window.open(targetUrl, '_blank');
     };
 
     function escapeHTML(str) {
