@@ -426,18 +426,31 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickerToInspector(ticker);
     };
 
-    // Global FireAnt Launcher (Handles Mobile & Desktop Optimized Layouts)
+    // Global FireAnt Launcher (Jump to FireAnt App with Smart Web Fallback)
     window.openFireAnt = (ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
-        const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || navigator.vendor || window.opera);
-        
-        // Mobile layout: `https://fireant.vn/dashboard/symbols/{symbol}` (Responsive single-column)
-        // Desktop layout: `https://fireant.vn/dashboard/content/symbols/{symbol}` (Pro 4-column)
-        const targetUrl = isMobile
-            ? `https://fireant.vn/dashboard/symbols/${symbol}`
-            : `https://fireant.vn/dashboard/content/symbols/${symbol}`;
+        const mobileWebUrl = `https://fireant.vn/dashboard/symbols/${symbol}`;
+        const desktopWebUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
 
-        window.open(targetUrl, '_blank');
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isAndroid) {
+            // Android (Brave / Samsung Internet / Chrome): Use Android Intent to launch FireAnt App directly
+            // with automatic fallback to responsive mobile web if app is not installed
+            const intentUrl = `intent://fireant.vn/dashboard/symbols/${symbol}#Intent;scheme=https;package=vn.fireant.mobile;S.browser_fallback_url=${encodeURIComponent(mobileWebUrl)};end`;
+            window.location.href = intentUrl;
+        } else if (isIOS) {
+            // iOS (Safari / Chrome iOS): Try custom app scheme with fallback to mobile web
+            const schemeUrl = `fireant://symbols/${symbol}`;
+            window.location.href = schemeUrl;
+            setTimeout(() => {
+                window.location.href = mobileWebUrl;
+            }, 1000);
+        } else {
+            // Desktop Browser: Open Pro Multi-Widget Dashboard in new tab
+            window.open(desktopWebUrl, '_blank', 'noopener,noreferrer');
+        }
     };
 
     function escapeHTML(str) {
