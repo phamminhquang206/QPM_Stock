@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const metricCeilFloor = document.getElementById('metric-ceil-floor');
     const metricVol = document.getElementById('metric-vol');
     const metricForeignBuySell = document.getElementById('metric-foreign-buy-sell');
-    const metricForeign = document.getElementById('metric-foreign');
+    const metricHighLow = document.getElementById('metric-highlow');
     const watchlistContainer = document.getElementById('watchlist-items');
 
     let currentSelectedTicker = 'FPT';
@@ -227,11 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (metricForeignBuySell) {
                 metricForeignBuySell.textContent = `${window.StockAPI.formatVolume(quote.foreignBuy)} / ${window.StockAPI.formatVolume(quote.foreignSell)}`;
             }
-            if (metricForeign) {
-                const net = quote.foreignNet || 0;
-                const netSign = net > 0 ? '+' : '';
-                metricForeign.textContent = `${netSign}${window.StockAPI.formatVolume(net)}`;
-                metricForeign.style.color = net > 0 ? '#00d084' : net < 0 ? '#ff4d4f' : '#94a3b8';
+            if (metricHighLow) {
+                metricHighLow.textContent = `${window.StockAPI.formatNumber(quote.lowestPrice)} - ${window.StockAPI.formatNumber(quote.highestPrice)}`;
             }
             
             // Update FireAnt dynamic target links
@@ -247,9 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sym = (symbol || 'FPT').toUpperCase();
         window.currentStockTicker = sym;
         const faTargetSymbol = document.getElementById('fa-target-symbol');
-        const btnFireAntLink = document.getElementById('btn-fireant-link');
         if (faTargetSymbol) faTargetSymbol.textContent = sym;
-        if (btnFireAntLink) btnFireAntLink.href = `https://fireant.vn/dashboard/content/symbols/${sym}`;
     }
 
     // Search bar listener
@@ -395,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="csc-ticker">${q.ticker} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(${q.exchange}) - ${q.name}</span></div>
                 <div style="display:flex; gap:6px;">
                     <span class="brand-badge" style="cursor:pointer;" onclick="window.inspectStock('${q.ticker}')">🔍 Tra cứu</span>
-                    <span class="brand-badge" style="cursor:pointer; background:rgba(249, 115, 22, 0.2); color:#fb923c; border-color:rgba(249,115,22,0.4);" onclick="window.openFireAnt(event, '${q.ticker}')">🔥 FireAnt ↗</span>
+                    <span class="brand-badge" style="cursor:pointer; background:rgba(249, 115, 22, 0.2); color:#fb923c; border-color:rgba(249,115,22,0.4);" onclick="window.openFireAnt('${q.ticker}')">🔥 FireAnt ↗</span>
                 </div>
             </div>
             <div class="csc-price-row">
@@ -416,8 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="csc-stat-val">${window.StockAPI.formatVolume(q.volume)}</span>
                 </div>
                 <div class="csc-stat-item">
-                    <span class="csc-stat-label">Khối ngoại ròng</span>
-                    <span class="csc-stat-val" style="color:${q.foreignNet > 0 ? 'var(--color-up)' : q.foreignNet < 0 ? 'var(--color-down)' : 'var(--text-secondary)'}">${q.foreignNet > 0 ? '+' : ''}${window.StockAPI.formatVolume(q.foreignNet)}</span>
+                    <span class="csc-stat-label">Thấp - Cao</span>
+                    <span class="csc-stat-val">${window.StockAPI.formatNumber(q.lowestPrice)} - ${window.StockAPI.formatNumber(q.highestPrice)}</span>
                 </div>
             </div>
         `;
@@ -429,24 +424,26 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickerToInspector(ticker);
     };
 
-    // Global FireAnt Launcher (Handles Mobile Universal Link & Web Dashboard)
-    window.openFireAnt = (e, ticker) => {
+    // Global FireAnt Launcher (Handles Mobile App Jump & Web Dashboard)
+    window.openFireAnt = (ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
         const webUrl = `https://fireant.vn/dashboard/content/symbols/${symbol}`;
-        
-        const btn = document.getElementById('btn-fireant-link');
-        if (btn) btn.href = webUrl;
-
         const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
-        if (!isMobile) {
-            if (e && e.preventDefault) e.preventDefault();
-            window.open(webUrl, '_blank', 'noopener,noreferrer');
-        } else {
-            // On mobile, if not clicked from a real <a> tag, navigate directly
-            if (!e || !e.target || e.target.tagName !== 'A') {
+        if (isMobile) {
+            // Target direct symbol route for FireAnt Mobile App
+            const appSchemeUrl = `fireant://symbols/${symbol}`;
+            
+            // Try custom app scheme to jump directly into the stock's view
+            window.location.href = appSchemeUrl;
+
+            // Fallback timeout to open web view if scheme fails
+            setTimeout(() => {
                 window.location.href = webUrl;
-            }
+            }, 800);
+        } else {
+            // Desktop Browser: Open directly in a new tab
+            window.open(webUrl, '_blank', 'noopener,noreferrer');
         }
     };
 

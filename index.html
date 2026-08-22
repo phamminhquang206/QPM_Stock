@@ -126,11 +126,11 @@
                     </div>
 
                     <div class="fa-action-buttons">
-                        <a id="btn-fireant-link" href="https://fireant.vn/dashboard/content/symbols/FPT" target="_blank" rel="noopener noreferrer" class="btn-fireant-main" onclick="window.openFireAnt(event, window.currentStockTicker || 'FPT')">
+                        <button type="button" class="btn-fireant-main" id="btn-fireant-launch" onclick="window.openFireAnt(window.currentStockTicker || 'FPT')">
                             <span class="fa-btn-icon">🚀</span>
                             <span>Mở Biểu Đồ & Dữ Liệu FireAnt</span>
                             <span class="fa-arrow">↗</span>
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -157,8 +157,8 @@
                         <div class="metric-value" id="metric-foreign-buy-sell" style="font-size: 0.78rem;">--</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Khối Ngoại Ròng</div>
-                        <div class="metric-value" id="metric-foreign">--</div>
+                        <div class="metric-label">Thấp - Cao</div>
+                        <div class="metric-value" id="metric-highlow" style="font-size: 0.78rem;">--</div>
                     </div>
                 </div>
             </div>
