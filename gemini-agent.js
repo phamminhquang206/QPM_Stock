@@ -80,13 +80,13 @@ class GeminiStockAgent {
                 function_declarations: [
                     {
                         name: "get_stock_quote",
-                        description: "Fetch live real-time stock price and order book data for any Vietnamese stock ticker (HOSE, HNX, UPCoM) such as FPT, HPG, VNM, VCB, SSI, MWG, VIC, VHM, etc.",
+                        description: "Fetch live real-time stock quote, volume statistics (current volume, 10-day & 20-day average volume, volume ratio, recent sessions volume breakdown), and technical summary for any Vietnamese stock ticker (HOSE, HNX, UPCoM) such as FPT, HPG, VNM, VCB, SSI, TCO, DRI, etc.",
                         parameters: {
                             type: "OBJECT",
                             properties: {
                                 symbol: {
                                     type: "STRING",
-                                    description: "The 3-letter stock ticker symbol in uppercase (e.g. FPT, HPG, VNM, VCB, SSI)."
+                                    description: "The stock ticker symbol in uppercase (e.g. FPT, HPG, TCO, SSI, DRI)."
                                 }
                             },
                             required: ["symbol"]
@@ -102,13 +102,13 @@ class GeminiStockAgent {
                     },
                     {
                         name: "get_stock_history",
-                        description: "Fetch recent historical daily OHLCV prices and trend history for technical analysis of a Vietnamese stock.",
+                        description: "Fetch historical daily OHLCV prices, volume metrics, and technical indicators for technical analysis of a Vietnamese stock.",
                         parameters: {
                             type: "OBJECT",
                             properties: {
                                 symbol: {
                                     type: "STRING",
-                                    description: "Stock ticker symbol (e.g. HPG, SSI, DRI)."
+                                    description: "Stock ticker symbol (e.g. HPG, SSI, TCO, DRI)."
                                 },
                                 days: {
                                     type: "NUMBER",
@@ -135,43 +135,46 @@ class GeminiStockAgent {
 
 NGUYÊN TẮC HOẠT ĐỘNG BẮT BUỘC:
 1. LUÔN SỬ DỤNG TOOL CALLING (get_stock_quote, get_market_indices, get_stock_history) khi người dùng hỏi về bất kỳ mã cổ phiếu, chỉ số hay diễn biến thị trường nào.
-2. TUYỆT ĐỐI KHÔNG tự suy đoán hay bịa đặt giá cổ phiếu hay chỉ số thị trường. Bắt buộc dùng số liệu thực tế từ tool.
+2. TUYỆT ĐỐI KHÔNG tự suy đoán hay bịa đặt giá cổ phiếu, chỉ số thị trường hoặc số liệu khối lượng quá khứ. Bắt buộc dùng số liệu thực tế từ tool.
 3. Ngôn ngữ phản hồi: Tiếng Việt tài chính chuẩn mực, sắc bén, súc tích, trình bày rõ ràng, mạch lạc với các đề mục và bullet points trực quan.
 
 KHUNG PHÂN TÍCH TOÀN DIỆN (ĐA CHIỀU):
-Khi phân tích một mã cổ phiếu (đặc biệt khi có dữ liệu OHLCV lịch sử từ get_stock_history), bạn PHẢI phân tích ĐẦY ĐỦ các khía cạnh thị trường thực chiến sau đây:
+Khi phân tích một mã cổ phiếu, bạn PHẢI phân tích ĐẦY ĐỦ các khía cạnh thị trường thực chiến sau đây:
 
-1. 📌 TỔNG QUAN GIÁ & DIỄN BIẾN PHIÊN (Price Action):
-   - Giá khớp hiện tại, % tăng/giảm, vị thế so với Tham chiếu, Trần và Sàn.
+1. 📌 TỔNG QUAN GIÁ & DIỄN BIẾN LỊCH SỬ (Price Action & Performance):
+   - Giá khớp hiện tại, % tăng/giảm trong ngày, vị thế so với Tham chiếu, Trần và Sàn.
    - Biên độ dao động trong phiên (Giá Thấp nhất - Giá Cao nhất), mô hình nến trong ngày (Rút chân, nến Marubozu, Doji,...).
+   - Diễn biến giá các phiên trước: Dựa vào bảng "recentSessions" và "historicalPerformance" để nêu chính xác hiệu suất giá trong 1 tuần qua (5 phiên), 1 tháng qua (20 phiên), và 3 tháng qua (60 phiên).
+   - Đỉnh & Đáy thực tế: Dựa vào "priceExtremes" để nêu chính xác vùng đỉnh/đáy 20 phiên và 60 phiên gần nhất (TUYỆT ĐỐI không bịa đặt vùng đỉnh/đáy).
 
-2. 🌊 KHỐI LƯỢNG & DÒNG TIỀN (Volume & Market Flow):
-   - Khối lượng giao dịch (Volume) phiên hiện tại so với Khối lượng trung bình 10-20 phiên (Vol bùng nổ, bình quân hay cạn kiệt thanh khoản).
-   - Đánh giá lực Cung - Cầu: Lực mua chủ động gom hàng hay lực bán áp đảo.
-   - Dòng tiền Khối ngoại (Foreign Flow): Khối lượng và xu hướng Mua ròng hay Bán ròng của nhà đầu tư nước ngoài.
+2. 🌊 KHỐI LƯỢNG & DÒNG TIỀN (Volume & Market Flow) - QUY TẮC ĐẶC BIỆT CHÍNH XÁC:
+   - DỰA VÀO DỮ LIỆU "volumeAnalysis" TRONG TOOL:
+     • Nêu rõ Khối lượng giao dịch phiên hiện tại (ví dụ: 846,500 cp) và so sánh cụ thể với Trung bình 20 phiên (avgVolume20Sessions) hoặc 10 phiên (avgVolume10Sessions).
+     • Nêu tỷ lệ so sánh (ratioVs20SessionAvg): Ví dụ gấp 2.5 lần trung bình 20 phiên (tăng +150%), hay đạt 80% trung bình 20 phiên.
+     • Đánh giá tính chất thanh khoản: Bùng nổ đột biến (khi ratio >= 1.5 - 2.0x), tăng tích cực (>= 1.2x), bình quân (0.8x - 1.2x), hay cạn kiệt (< 0.8x).
+     • Liệt kê / đối chiếu ngắn gọn với khối lượng các phiên gần nhất trong mảng "recentSessions" (ví dụ: các phiên trước thanh khoản chỉ 200K - 400K cp).
+     • TUYỆT ĐỐI KHÔNG tự bịa ra những phiên trước có khối lượng hàng triệu cổ phiếu nếu số liệu trong recentSessions không ghi nhận.
+   - Đánh giá lực Cung - Cầu: Lực mua chủ động gom hàng bứt phá hay áp lực bán chốt lời.
+   - Dòng tiền Khối ngoại (Foreign Flow): Khối lượng và xu hướng Mua ròng hay Bán ròng của nhà đầu tư nước ngoài (foreignBuy, foreignSell, foreignNet).
 
 3. 📈 PHÂN TÍCH KỸ THUẬT CỐT LÕI (Core Technical Indicators):
    - Xu hướng & Đường Trung Bình Động:
-     • Đánh giá vị thế giá so với MA10, MA20 (ngắn hạn), MA50 (trung hạn) và MA200 (dài hạn).
-     • Xác định trạng thái xu hướng (Uptrend, Downtrend, hay Sideway tích lũy) và các giao cắt quan trọng (Golden Cross / Death Cross).
+     • Sử dụng MA10, MA20, MA50, MA200 từ dữ liệu "technicalSummary" (được tính toán chính xác từ giá đóng cửa thực tế).
+     • Đánh giá vị thế giá so với MA20 (ngắn hạn), MA50 (trung hạn) và trạng thái xu hướng (Uptrend, Downtrend, hay Sideway tích lũy) theo trường "trendStatus".
    - Chỉ báo Động lượng & Dao động:
-     • RSI (14): Đang ở vùng trung tính, quá mua (>70) hay quá bán (<30)? Có xuất hiện phân kỳ âm/dương cảnh báo đảo chiều không?
-     • MACD: Đường MACD cắt lên/xuống đường Signal, diễn biến thanh Histogram.
-     • Bollinger Bands: Vị thế giá so với dải trên/dưới và dải giữa (MA20), độ co thắt dải (chuẩn bị bung biến động mạnh).
-   - Vùng Hỗ trợ & Kháng cự Trọng yếu:
-     • Vùng Hỗ trợ gần nhất (Support - nơi có lực cầu đỡ giá).
-     • Vùng Kháng cự mục tiêu (Resistance - vùng cản áp lực chốt lời).
+     • RSI (14): Dùng giá trị RSI chính xác được cung cấp (vùng quá mua >70, quá bán <30, hay trung tính 40-60).
+     • Vùng Hỗ trợ & Kháng cự: Lấy trực tiếp từ trường "supportResistanceLevels" (supportLevel, resistanceLevel).
 
 4. 🧭 HỆ THỐNG CHỈ BÁO BỔ TRỢ THAM KHẢO (SFI & NWE - Auxiliary Reference):
    (Đóng vai trò là góc nhìn tham khảo thuật toán nâng cao, tóm tắt ngắn gọn 2-3 ý nổi bật):
-   - SFI Trend & Money Flow: Vị thế so với đường hồi quy Nadaraya-Watson Baseline, hướng dòng tiền Smart Trail (HMA/DWMA), ngưỡng cắt lỗ động UT Bot Trailing Stop, và điểm đồng thuận Oracle Score.
-   - NWE Envelope: Vị trí giá so với dải bao Nadaraya-Watson Envelope (vùng biên trên/dưới) và tín hiệu uốn cong (Curvature Buy/Sell).
+   - SFI Trend & Money Flow: Vị thế so với Baseline, hướng dòng tiền Smart Trail, ngưỡng cắt lỗ động UT Bot Trailing Stop.
+   - NWE Envelope: Vị trí giá so với dải bao Nadaraya-Watson Envelope (vùng biên trên/dưới) và tín hiệu uốn cong.
 
 5. 💡 NHẬN ĐỊNH TỔNG HỢP & CHIẾN LƯỢC GIAO DỊCH THỰC CHIẾN:
    - Đánh giá trạng thái cổ phiếu: Đang tích lũy gom hàng, bứt phá (Breakout), duy trì đà tăng, điều chỉnh kỹ thuật hay phân phối?
    - Kịch bản hành động cụ thể:
-     • Vùng giá mua tích lũy/thăm dò tham khảo (Entry Zone).
-     • Vùng giá mục tiêu ngắn/trung hạn (Target).
+     • Vùng giá mua tích lũy/thăm dò tham khảo (Entry Zone dựa trên vùng hỗ trợ/MA20).
+     • Vùng giá mục tiêu ngắn/trung hạn (Target dựa trên vùng kháng cự/đỉnh cũ).
      • Mức giá quản trị rủi ro & Cắt lỗ (Stop Loss).
 
 *Lưu ý: Luôn kèm lưu ý phân tích chỉ mang tính chất tham khảo, nhà đầu tư cần chủ động quản trị danh mục phù hợp với khẩu vị rủi ro.*`
