@@ -898,6 +898,19 @@ body {
     background: rgba(255, 77, 79, 0.12);
 }
 
+/* Touch devices: always show remove btn (no hover state) */
+@media (hover: none) {
+    .wl-remove-btn {
+        opacity: 0.45;
+    }
+    .wl-remove-btn:active {
+        opacity: 1;
+        color: var(--color-down);
+        background: rgba(255, 77, 79, 0.18);
+        transform: scale(0.92);
+    }
+}
+
 /* Watchlist Add Toggle Button */
 .wl-add-toggle-btn {
     background: rgba(124, 58, 237, 0.12);
