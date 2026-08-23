@@ -867,6 +867,137 @@ body {
     font-size: 0.75rem;
 }
 
+/* Watchlist Right Group (price + remove btn) */
+.wl-right-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Watchlist Remove Button */
+.wl-remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    line-height: 1;
+    opacity: 0;
+    transition: color var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.wl-item:hover .wl-remove-btn {
+    opacity: 1;
+}
+
+.wl-remove-btn:hover {
+    color: var(--color-down);
+    background: rgba(255, 77, 79, 0.12);
+}
+
+/* Watchlist Add Toggle Button */
+.wl-add-toggle-btn {
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    color: #a78bfa;
+    font-size: 0.73rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.wl-add-toggle-btn:hover,
+.wl-add-toggle-btn.active {
+    background: rgba(124, 58, 237, 0.25);
+    border-color: rgba(124, 58, 237, 0.6);
+    color: #c4b5fd;
+}
+
+/* Watchlist Add Input Row */
+.wl-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    transition: max-height 0.28s ease, opacity 0.22s ease, margin-bottom 0.28s ease;
+}
+
+.wl-add-row.open {
+    max-height: 48px;
+    opacity: 1;
+    margin-bottom: 10px;
+}
+
+.wl-add-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.wl-add-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.18);
+}
+
+.wl-add-confirm-btn {
+    background: var(--accent-gradient);
+    border: none;
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.wl-add-confirm-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* Watchlist item flash (already in list) */
+@keyframes wlFlash {
+    0%, 100% { background: var(--bg-elevated); }
+    40% { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.5); }
+}
+
+.wl-item-flash {
+    animation: wlFlash 0.8s ease;
+}
+
+/* Watchlist item removal animation */
+@keyframes wlFadeOut {
+    from { opacity: 1; transform: translateX(0); max-height: 50px; }
+    to   { opacity: 0; transform: translateX(12px); max-height: 0; margin-bottom: -6px; }
+}
+
+.wl-item-removing {
+    animation: wlFadeOut 0.28s ease forwards;
+    pointer-events: none;
+    overflow: hidden;
+}
+
 /* ==========================================================================
    Modal Dialogs (API Key / Settings)
    ========================================================================== */

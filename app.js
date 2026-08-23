@@ -37,16 +37,95 @@ document.addEventListener('DOMContentLoaded', () => {
     const metricForeignBuySell = document.getElementById('metric-foreign-buy-sell');
     const metricHighLow = document.getElementById('metric-highlow');
     const watchlistContainer = document.getElementById('watchlist-items');
+    const btnWlAddToggle = document.getElementById('btn-wl-add-toggle');
+    const wlAddRow = document.getElementById('wl-add-row');
+    const wlAddInput = document.getElementById('wl-add-input');
+    const btnWlAddConfirm = document.getElementById('btn-wl-add-confirm');
 
     let currentSelectedTicker = 'FPT';
     window.currentStockTicker = 'FPT';
-    const defaultWatchlist = ['FPT', 'HPG', 'SSI', 'PVS', 'SHS', 'BSR', 'ACV', 'MCH'];
+    const WATCHLIST_KEY = 'qpm_watchlist';
+    const DEFAULT_WATCHLIST = ['FPT', 'HPG', 'SSI', 'PVS', 'SHS', 'BSR', 'ACV', 'MCH'];
+
+    function getSavedWatchlist() {
+        try {
+            const raw = localStorage.getItem(WATCHLIST_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {}
+        return [...DEFAULT_WATCHLIST];
+    }
+
+    function saveWatchlist(list) {
+        localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+    }
+
+    function addToWatchlist(symbol) {
+        const sym = symbol.trim().toUpperCase();
+        if (!sym) return;
+        const list = getSavedWatchlist();
+        if (list.includes(sym)) {
+            // Flash highlight nếu đã có
+            const existing = document.getElementById(`wl-${sym}`);
+            if (existing) {
+                existing.classList.add('wl-item-flash');
+                setTimeout(() => existing.classList.remove('wl-item-flash'), 800);
+            }
+            return;
+        }
+        list.push(sym);
+        saveWatchlist(list);
+        appendWatchlistItem(sym);
+    }
+
+    function removeFromWatchlist(symbol) {
+        const sym = symbol.trim().toUpperCase();
+        let list = getSavedWatchlist();
+        list = list.filter(s => s !== sym);
+        saveWatchlist(list);
+        const el = document.getElementById(`wl-${sym}`);
+        if (el) {
+            el.classList.add('wl-item-removing');
+            setTimeout(() => el.remove(), 280);
+        }
+    }
 
     // 2. Initial Load
     loadTickerToInspector('FPT');
     loadMarketTicker();
     loadWatchlist();
     updateApiKeyStatusUI();
+
+    // Watchlist Add Toggle
+    btnWlAddToggle.addEventListener('click', () => {
+        const isOpen = wlAddRow.classList.toggle('open');
+        btnWlAddToggle.classList.toggle('active', isOpen);
+        if (isOpen) {
+            wlAddInput.focus();
+        } else {
+            wlAddInput.value = '';
+        }
+    });
+
+    function confirmAddStock() {
+        const sym = wlAddInput.value.trim().toUpperCase();
+        if (!sym) return;
+        addToWatchlist(sym);
+        wlAddInput.value = '';
+        wlAddInput.focus();
+    }
+
+    btnWlAddConfirm.addEventListener('click', confirmAddStock);
+    wlAddInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmAddStock();
+        if (e.key === 'Escape') {
+            wlAddRow.classList.remove('open');
+            btnWlAddToggle.classList.remove('active');
+            wlAddInput.value = '';
+        }
+    });
 
     // Auto-refresh market indices every 30s
     setInterval(loadMarketTicker, 30000);
@@ -160,35 +239,56 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. Watchlist Loader
-    async function loadWatchlist() {
+    function loadWatchlist() {
         watchlistContainer.innerHTML = '';
-        for (const sym of defaultWatchlist) {
-            const row = document.createElement('div');
-            row.className = 'wl-item';
-            row.id = `wl-${sym}`;
-            row.innerHTML = `
-                <span class="wl-symbol">${sym}</span>
+        const list = getSavedWatchlist();
+        list.forEach(sym => appendWatchlistItem(sym));
+    }
+
+    function appendWatchlistItem(sym) {
+        // Prevent duplicates in DOM
+        if (document.getElementById(`wl-${sym}`)) return;
+
+        const row = document.createElement('div');
+        row.className = 'wl-item';
+        row.id = `wl-${sym}`;
+        row.innerHTML = `
+            <span class="wl-symbol">${sym}</span>
+            <div class="wl-right-group">
                 <div class="wl-price-group">
                     <div class="wl-price" id="wl-p-${sym}">--</div>
                     <div class="wl-change" id="wl-c-${sym}">--</div>
                 </div>
-            `;
-            row.addEventListener('click', () => loadTickerToInspector(sym));
-            watchlistContainer.appendChild(row);
+                <button class="wl-remove-btn" title="Xóa ${sym} khỏi danh mục" data-sym="${sym}">✕</button>
+            </div>
+        `;
 
-            // Fetch quote asynchronously
-            window.StockAPI.getStockQuote(sym).then(q => {
-                const pEl = document.getElementById(`wl-p-${sym}`);
-                const cEl = document.getElementById(`wl-c-${sym}`);
-                if (pEl && cEl) {
-                    pEl.textContent = window.StockAPI.formatNumber(q.currentPrice);
-                    pEl.style.color = getPriceColor(q.status);
-                    const sign = q.change > 0 ? '+' : '';
-                    cEl.textContent = `${sign}${q.percentChange}%`;
-                    cEl.style.color = getPriceColor(q.status);
-                }
-            });
-        }
+        // Click on row → load inspector (but not if clicking remove btn)
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.wl-remove-btn')) return;
+            loadTickerToInspector(sym);
+        });
+
+        // Remove button
+        row.querySelector('.wl-remove-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeFromWatchlist(sym);
+        });
+
+        watchlistContainer.appendChild(row);
+
+        // Fetch quote asynchronously
+        window.StockAPI.getStockQuote(sym).then(q => {
+            const pEl = document.getElementById(`wl-p-${sym}`);
+            const cEl = document.getElementById(`wl-c-${sym}`);
+            if (pEl && cEl) {
+                pEl.textContent = window.StockAPI.formatNumber(q.currentPrice);
+                pEl.style.color = getPriceColor(q.status);
+                const sign = q.change > 0 ? '+' : '';
+                cEl.textContent = `${sign}${q.percentChange}%`;
+                cEl.style.color = getPriceColor(q.status);
+            }
+        }).catch(() => {});
     }
 
     function getPriceColor(status) {

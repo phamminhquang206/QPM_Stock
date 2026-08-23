@@ -181,7 +181,12 @@
             <div class="panel-card">
                 <div class="watchlist-header">
                     <div class="watchlist-title">⭐ Danh Mục Theo Dõi</div>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">Live Quote</span>
+                    <button class="wl-add-toggle-btn" id="btn-wl-add-toggle" title="Thêm mã cổ phiếu">＋ Thêm mã</button>
+                </div>
+                <!-- Add Stock Input Row (hidden by default) -->
+                <div class="wl-add-row" id="wl-add-row">
+                    <input type="text" class="wl-add-input" id="wl-add-input" placeholder="Nhập mã (VD: VCB, MWG...)" maxlength="10" autocomplete="off" />
+                    <button class="wl-add-confirm-btn" id="btn-wl-add-confirm">Thêm</button>
                 </div>
                 <div class="watchlist-items" id="watchlist-items">
                     <!-- Items populated dynamically -->
