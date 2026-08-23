@@ -527,15 +527,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Global FireAnt Launcher
-    // Note: FireAnt native app does NOT support deep linking to specific stock symbols.
-    // On mobile, we open the responsive web view directly (always lands on the correct stock page).
     window.openFireAnt = (ticker) => {
         const symbol = (ticker || window.currentStockTicker || currentSelectedTicker || 'FPT').toUpperCase();
         const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
         if (isMobile) {
-            // Mobile: Open responsive single-column web view (fits phone screens, correct symbol)
-            window.open(`https://fireant.vn/dashboard/symbols/${symbol}`, '_blank');
+            // Mobile: Mở trang chi tiết mã cổ phiếu chuẩn mobile của FireAnt
+            window.open(`https://fireant.vn/ma-chung-khoan/${symbol}`, '_blank');
         } else {
             // Desktop: Open full pro multi-widget dashboard
             window.open(`https://fireant.vn/dashboard/content/symbols/${symbol}`, '_blank', 'noopener,noreferrer');
