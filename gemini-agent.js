@@ -80,13 +80,13 @@ class GeminiStockAgent {
                 function_declarations: [
                     {
                         name: "get_stock_quote",
-                        description: "Fetch live real-time stock quote, volume statistics (current volume, 10-day & 20-day average volume, volume ratio, recent sessions volume breakdown), and technical summary for any Vietnamese stock ticker (HOSE, HNX, UPCoM) such as FPT, HPG, VNM, VCB, SSI, TCO, DRI, etc.",
+                        description: "Tra cứu dữ liệu giá khớp lệnh trực tiếp, thống kê khối lượng (khối lượng phiên, TB 10 phiên, TB 20 phiên, tỷ lệ bùng nổ, chi tiết các phiên gần nhất) và tóm tắt kỹ thuật cho bất kỳ mã cổ phiếu Việt Nam (HOSE, HNX, UPCoM) như FPT, HPG, VNM, VCB, SSI, TCO, DRI, v.v.",
                         parameters: {
                             type: "OBJECT",
                             properties: {
                                 symbol: {
                                     type: "STRING",
-                                    description: "The stock ticker symbol in uppercase (e.g. FPT, HPG, TCO, SSI, DRI)."
+                                    description: "Mã chứng khoán viết hoa (ví dụ: FPT, HPG, TCO, SSI, DRI)."
                                 }
                             },
                             required: ["symbol"]
@@ -94,7 +94,7 @@ class GeminiStockAgent {
                     },
                     {
                         name: "get_market_indices",
-                        description: "Fetch real-time status and movement of Vietnamese market indices: VN-INDEX, VN30-Index, HNX-Index, and UPCOM-Index.",
+                        description: "Tra cứu diễn biến trực tiếp các chỉ số thị trường chứng khoán Việt Nam: VN-INDEX, VN30-Index, HNX-Index và UPCOM-Index.",
                         parameters: {
                             type: "OBJECT",
                             properties: {}
@@ -102,17 +102,17 @@ class GeminiStockAgent {
                     },
                     {
                         name: "get_stock_history",
-                        description: "Fetch historical daily OHLCV prices, volume metrics, and technical indicators for technical analysis of a Vietnamese stock.",
+                        description: "Lấy dữ liệu lịch sử giá OHLCV, thống kê khối lượng và chỉ báo kỹ thuật của cổ phiếu Việt Nam để phân tích kỹ thuật.",
                         parameters: {
                             type: "OBJECT",
                             properties: {
                                 symbol: {
                                     type: "STRING",
-                                    description: "Stock ticker symbol (e.g. HPG, SSI, TCO, DRI)."
+                                    description: "Mã chứng khoán (ví dụ: HPG, SSI, TCO, DRI)."
                                 },
                                 days: {
                                     type: "NUMBER",
-                                    description: "Number of past trading days to retrieve (default 30)."
+                                    description: "Số ngày giao dịch cần lấy trong quá khứ (mặc định 30 ngày)."
                                 }
                             },
                             required: ["symbol"]
@@ -136,10 +136,13 @@ class GeminiStockAgent {
 NGUYÊN TẮC HOẠT ĐỘNG BẮT BUỘC:
 1. LUÔN SỬ DỤNG TOOL CALLING (get_stock_quote, get_market_indices, get_stock_history) khi người dùng hỏi về bất kỳ mã cổ phiếu, chỉ số hay diễn biến thị trường nào.
 2. TUYỆT ĐỐI KHÔNG tự suy đoán hay bịa đặt giá cổ phiếu, chỉ số thị trường hoặc số liệu khối lượng quá khứ. Bắt buộc dùng số liệu thực tế từ tool.
-3. QUY TẮC BẮT BUỘC KHI KHÔNG CÓ DỮ LIỆU LỊCH SỬ (isLiveRealtimeFeed === false hoặc hasHistoricalSeries === false hoặc avgVolume20Sessions === null):
+3. QUY TẮC NGÔN NGỮ TUYỆT ĐỐI (100% TIẾNG VIỆT):
+   - Toàn bộ nội dung trả lời (bao gồm câu mở đầu, câu chào, tiêu đề mục và kết luận) BẮT BUỘC 100% bằng TIẾNG VIỆT.
+   - TUYỆT ĐỐI KHÔNG mở đầu bằng các câu Tiếng Anh (như "Here is the analysis...", "Based on the retrieved data...", "Let's analyze...", "Sure, here is..."). Đi thẳng vào nội dung phân tích bằng Tiếng Việt.
+4. QUY TẮC BẮT BUỘC KHI KHÔNG CÓ DỮ LIỆU LỊCH SỬ (isLiveRealtimeFeed === false hoặc hasHistoricalSeries === false hoặc avgVolume20Sessions === null):
    - BẮT BUỘC PHẢI THÔNG BÁO MINH BẠCH CHO NGƯỜI DÙNG: "⚠️ Hiện tại hệ thống không kết nối được chuỗi nến lịch sử từ sàn giao dịch (đang dùng snapshot tĩnh). Chỉ có số liệu khớp lệnh phiên gần nhất (Khối lượng: ... cp, Giá: ... đ). Không có dữ liệu 20 phiên trước để so sánh trung bình hay vẽ đỉnh/đáy lịch sử."
    - TUYỆT ĐỐI KHÔNG TỰ BỊA ĐẶT số liệu trung bình 20 phiên, tỷ lệ tăng giảm so với quá khứ, hay các phiên trước.
-4. PHONG CÁCH TRÌNH BÀY: Súc tích, cô đọng, sắc bén, đi thẳng vào số liệu cốt lõi, KHÔNG viết dài dòng lan man. Dùng các bullet points ngắn gọn, dễ đọc.
+5. PHONG CÁCH TRÌNH BÀY: Súc tích, cô đọng, sắc bén, đi thẳng vào số liệu cốt lõi, KHÔNG viết dài dòng lan man. Dùng các bullet points ngắn gọn, dễ đọc.
 
 CẤU TRÚC PHÂN TÍCH TINH GỌN (CHÍNH XÁC & CÔ ĐỌNG):
 Khi phân tích một mã cổ phiếu (khi có đầy đủ dữ liệu nến realtime), bạn trình bày theo cấu trúc 4 phần ngắn gọn sau:
@@ -245,7 +248,10 @@ Khi phân tích một mã cổ phiếu (khi có đầy đủ dữ liệu nến r
             if (functionCalls.length === 0) {
                 // Final text response received
                 const textParts = content.parts.filter(part => part.text).map(p => p.text);
-                finalResponseText = textParts.join("\n");
+                let rawText = textParts.join("\n");
+                // Clean up any accidental English lead-in phrases
+                rawText = rawText.replace(/^(?:Here (?:is|are)|Based on the|Sure|Below is|In summary|According to the)[^\n]*\n+/i, '').trim();
+                finalResponseText = rawText;
                 break;
             }
 
