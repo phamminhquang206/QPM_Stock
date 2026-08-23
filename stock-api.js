@@ -66,22 +66,34 @@ const StockAPI = {
         const isIndex = ['VNINDEX', 'VN30', 'HNX', 'UPCOM', 'HNXINDEX', 'UPCOMINDEX'].includes(ticker);
         const normalizedIndexSymbol = ticker === 'HNXINDEX' ? 'HNX' : ticker === 'UPCOMINDEX' ? 'UPCOM' : ticker;
 
-        // 1. Try Live Network Gateway
+        // 1. Try Universal Real-Time Gateway (VNDirect DChart - Open CORS for GitHub Pages & Web)
         try {
             const nowSec = Math.floor(Date.now() / 1000);
-            const fromSec = nowSec - (240 * 86400); // ~160 trading sessions (super fast <200ms, accurate MA/Volume stats)
+            const fromSec = nowSec - (240 * 86400); // ~160 trading sessions
+            const targetSymbol = normalizedIndexSymbol;
 
-            const url = isIndex 
-                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${fromSec}&to=${nowSec}&symbol=${normalizedIndexSymbol}&resolution=1D`
-                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${fromSec}&to=${nowSec}&symbol=${ticker}&resolution=1D`;
+            let res = null;
+            // Primary: VNDirect DChart (Access-Control-Allow-Origin: *)
+            try {
+                const vndUrl = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${targetSymbol}&resolution=D&from=${fromSec}&to=${nowSec}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                res = await fetch(vndUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+            } catch (vndErr) {
+                // Secondary Fallback: Entrade Gateway
+                try {
+                    const fallbackUrl = isIndex 
+                        ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${fromSec}&to=${nowSec}&symbol=${targetSymbol}&resolution=1D`
+                        : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${fromSec}&to=${nowSec}&symbol=${targetSymbol}&resolution=1D`;
+                    const controller2 = new AbortController();
+                    const timeoutId2 = setTimeout(() => controller2.abort(), 4000);
+                    res = await fetch(fallbackUrl, { signal: controller2.signal });
+                    clearTimeout(timeoutId2);
+                } catch (entradeErr) {}
+            }
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (res.ok) {
+            if (res && res.ok) {
                 const data = await res.json();
                 const count = data.t ? data.t.length : 0;
                 if (count > 0) {
@@ -102,7 +114,7 @@ const StockAPI = {
                 }
             }
         } catch (netErr) {
-            // Network fallback
+            console.warn('[StockAPI] Live gateway failed:', netErr);
         }
 
         // 2. Try Master Stock Database (966+ stocks covering HOSE, HNX, UPCoM)
@@ -349,13 +361,14 @@ const StockAPI = {
         const shares = 1000000000;
         const marketCap = cur * shares;
         const volume = d.v || 1000000;
-        const avg20 = Math.round(volume * 0.85);
 
         return {
             ticker: ticker,
             name: d.n || `${ticker} Corporation`,
             exchange: exchange,
             isIndex: false,
+            isLiveRealtimeFeed: false,
+            dataSource: "database_snapshot_fallback",
             currentPrice: cur,
             referencePrice: ref,
             change: change,
@@ -369,10 +382,15 @@ const StockAPI = {
             volumeAnalysis: {
                 currentSessionVolume: volume,
                 currentSessionVolumeFormatted: this.formatVolume(volume),
-                avgVolume20Sessions: avg20,
-                avgVolume20SessionsFormatted: this.formatVolume(avg20),
-                ratioVs20SessionAvg: Number((volume / avg20).toFixed(2)),
-                volumeEvaluation: `Khối lượng đạt ${this.formatVolume(volume)}, xấp xỉ mức trung bình 20 phiên.`
+                hasHistoricalSeries: false,
+                avgVolume20Sessions: null,
+                ratioVs20SessionAvg: null,
+                volumeEvaluation: "Dữ liệu lịch sử 20 phiên không khả dụng (đang dùng snapshot tĩnh).",
+                recentSessions: null
+            },
+            technicalSummary: {
+                hasHistoricalData: false,
+                notice: "Không có dữ liệu chuỗi nến quá khứ để tính MA20, MA50, RSI."
             },
             foreignBuy: d.bf || 0,
             foreignSell: d.sf || 0,
@@ -413,7 +431,15 @@ const StockAPI = {
         }
 
         const marketCap = currentPrice * 1000000000;
-        const volumeAnalysis = rawData ? this.computeVolumeAnalysis(rawData, multiplier) : null;
+        const volumeAnalysis = rawData ? this.computeVolumeAnalysis(rawData, multiplier) : {
+            currentSessionVolume: volume,
+            currentSessionVolumeFormatted: this.formatVolume(volume),
+            hasHistoricalSeries: false,
+            avgVolume20Sessions: null,
+            ratioVs20SessionAvg: null,
+            volumeEvaluation: "Dữ liệu lịch sử 20 phiên không khả dụng.",
+            recentSessions: null
+        };
         const technicalSummary = rawData ? this.computeTechnicalIndicators(rawData, multiplier) : null;
 
         return {
@@ -421,6 +447,8 @@ const StockAPI = {
             name: companyName,
             exchange: exchange,
             isIndex: isIndex,
+            isLiveRealtimeFeed: Boolean(rawData),
+            dataSource: rawData ? "live_exchange_feed" : "database_snapshot",
             currentPrice: currentPrice,
             referencePrice: refPrice,
             change: change,
@@ -468,6 +496,8 @@ const StockAPI = {
             name: `Công ty Cổ phần ${ticker}`,
             exchange: ex,
             isIndex: false,
+            isLiveRealtimeFeed: false,
+            dataSource: "generic_fallback",
             currentPrice: cur,
             referencePrice: ref,
             change: 500,
@@ -478,6 +508,19 @@ const StockAPI = {
             lowestPrice: 24900,
             openPrice: 25000,
             volume: 1250000,
+            volumeAnalysis: {
+                currentSessionVolume: 1250000,
+                currentSessionVolumeFormatted: "1.25M",
+                hasHistoricalSeries: false,
+                avgVolume20Sessions: null,
+                ratioVs20SessionAvg: null,
+                volumeEvaluation: "Không có dữ liệu lịch sử từ sàn.",
+                recentSessions: null
+            },
+            technicalSummary: {
+                hasHistoricalData: false,
+                notice: "Không có dữ liệu lịch sử để phân tích kỹ thuật."
+            },
             foreignBuy: 150000,
             foreignSell: 80000,
             foreignNet: 70000,
@@ -536,22 +579,33 @@ const StockAPI = {
         if (resolution === 'W') resCode = '1W';
         else if (['1', '5', '15'].includes(resolution)) resCode = resolution;
 
-        // Try Live Gateway First
+        // Try Live Gateway (VNDirect DChart primary with open CORS, Entrade fallback)
         try {
             const nowSec = Math.floor(Date.now() / 1000);
-            const fromSec = nowSec - (Math.max(days, 30) * 86400 * 2.5);
+            const fromSec = nowSec - (Math.max(days, 60) * 86400 * 1.8);
+            const targetSymbol = normalizedIndexSymbol;
+            const resCodeVnd = resolution === 'W' ? 'W' : 'D';
 
-            const url = isIndex
-                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${Math.floor(fromSec)}&to=${nowSec + 86400}&symbol=${normalizedIndexSymbol}&resolution=${resCode}`
-                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${Math.floor(fromSec)}&to=${nowSec + 86400}&symbol=${ticker}&resolution=${resCode}`;
+            let res = null;
+            try {
+                const vndUrl = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${targetSymbol}&resolution=${resCodeVnd}&from=${Math.floor(fromSec)}&to=${nowSec}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                res = await fetch(vndUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+            } catch (vndErr) {
+                try {
+                    const fallbackUrl = isIndex
+                        ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${Math.floor(fromSec)}&to=${nowSec}&symbol=${targetSymbol}&resolution=${resCode}`
+                        : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${Math.floor(fromSec)}&to=${nowSec}&symbol=${targetSymbol}&resolution=${resCode}`;
+                    const controller2 = new AbortController();
+                    const timeoutId2 = setTimeout(() => controller2.abort(), 4000);
+                    res = await fetch(fallbackUrl, { signal: controller2.signal });
+                    clearTimeout(timeoutId2);
+                } catch (entradeErr) {}
+            }
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (res.ok) {
+            if (res && res.ok) {
                 const data = await res.json();
                 const count = data.t ? data.t.length : 0;
 

@@ -3,6 +3,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // App Version
+    window.APP_VERSION = 'v1.1';
+    console.log(`[QPM Stock AI] Version: ${window.APP_VERSION}`);
+
     // 1. Initialize Components
     const agent = new window.GeminiStockAgent();
     

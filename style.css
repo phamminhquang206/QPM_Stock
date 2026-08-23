@@ -133,6 +133,18 @@ body {
     text-transform: uppercase;
 }
 
+.app-version-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    letter-spacing: 0.3px;
+}
+
 .header-actions {
     display: flex;
     align-items: center;
