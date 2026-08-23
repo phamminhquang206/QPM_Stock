@@ -68,12 +68,15 @@ const StockAPI = {
 
         // 1. Try Live Network Gateway
         try {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const fromSec = nowSec - (240 * 86400); // ~160 trading sessions (super fast <200ms, accurate MA/Volume stats)
+
             const url = isIndex 
-                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=1&to=9999999999&symbol=${normalizedIndexSymbol}&resolution=1D`
-                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=1&to=9999999999&symbol=${ticker}&resolution=1D`;
+                ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${fromSec}&to=${nowSec}&symbol=${normalizedIndexSymbol}&resolution=1D`
+                : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${fromSec}&to=${nowSec}&symbol=${ticker}&resolution=1D`;
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
 
             const res = await fetch(url, { signal: controller.signal });
             clearTimeout(timeoutId);
