@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // App Version
-    window.APP_VERSION = 'v1.2';
+    window.APP_VERSION = 'v1.3';
     console.log(`[QPM Stock AI] Version: ${window.APP_VERSION}`);
 
     // 1. Initialize Components

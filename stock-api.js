@@ -66,7 +66,71 @@ const StockAPI = {
         const isIndex = ['VNINDEX', 'VN30', 'HNX', 'UPCOM', 'HNXINDEX', 'UPCOMINDEX'].includes(ticker);
         const normalizedIndexSymbol = ticker === 'HNXINDEX' ? 'HNX' : ticker === 'UPCOMINDEX' ? 'UPCOM' : ticker;
 
-        // 1. Try Universal Real-Time Gateway (VNDirect DChart - Open CORS for GitHub Pages & Web)
+        // 1. For non-index stocks: Try Live Real-Time Board Gateway (VPS API) for exact live price, official UPCoM ref, ceiling, floor, % change
+        if (!isIndex) {
+            try {
+                const vpsUrl = `https://bgapidatafeed.vps.com.vn/getliststockdata/${ticker}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
+                const vpsRes = await fetch(vpsUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (vpsRes.ok) {
+                    const vpsList = await vpsRes.json();
+                    const item = Array.isArray(vpsList) && vpsList.length > 0 ? vpsList[0] : null;
+
+                    if (item && item.sym === ticker) {
+                        const curPrice = (item.lastPrice > 0 ? item.lastPrice : (item.closePrice > 0 ? item.closePrice / 1000 : item.r)) * 1000;
+                        const refPrice = (item.r > 0 ? item.r : curPrice / 1000) * 1000;
+                        const ceilPrice = (item.c > 0 ? item.c : refPrice * 1.07 / 1000) * 1000;
+                        const floorPrice = (item.f > 0 ? item.f : refPrice * 0.93 / 1000) * 1000;
+                        const openPrice = (item.openPrice > 0 ? item.openPrice : refPrice / 1000) * 1000;
+                        const highPrice = (item.highPrice > 0 ? item.highPrice : curPrice / 1000) * 1000;
+                        const lowPrice = (item.lowPrice > 0 ? item.lowPrice : curPrice / 1000) * 1000;
+                        const volume = item.lot > 0 ? item.lot * 10 : 0;
+                        const foreignBuy = item.fBVol ? (Number(item.fBVol) * 10) : 0;
+                        const foreignSell = item.fSVolume ? (Number(item.fSVolume) * 10) : 0;
+                        
+                        const rawChange = curPrice - refPrice;
+                        const change = Math.round(rawChange * 100) / 100;
+                        let pctChange = 0;
+                        if (refPrice > 0) {
+                            if (item.changePc !== undefined && item.changePc !== null && !isNaN(item.changePc)) {
+                                const absPct = Math.abs(Number(item.changePc));
+                                pctChange = rawChange < 0 ? -absPct : (rawChange > 0 ? absPct : 0);
+                            } else {
+                                pctChange = Number(((rawChange / refPrice) * 100).toFixed(2));
+                            }
+                        }
+
+                        // Also fetch historical data for 240 sessions for Volume & MA analysis
+                        let histData = null;
+                        try {
+                            const nowSec = Math.floor(Date.now() / 1000);
+                            const fromSec = nowSec - (240 * 86400);
+                            const vndUrl = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${ticker}&resolution=D&from=${fromSec}&to=${nowSec}`;
+                            const histController = new AbortController();
+                            const histTimeout = setTimeout(() => histController.abort(), 3000);
+                            const histRes = await fetch(vndUrl, { signal: histController.signal });
+                            clearTimeout(histTimeout);
+                            if (histRes.ok) histData = await histRes.json();
+                        } catch (histErr) {}
+
+                        const quote = this.buildQuoteObject(
+                            ticker, curPrice, refPrice, openPrice, highPrice, lowPrice, volume, false, 
+                            histData, 1000, 
+                            { ceil: ceilPrice, floor: floorPrice, change: change, pct: pctChange, foreignBuy, foreignSell }
+                        );
+                        this.cache.set(cacheKey, { timestamp: Date.now(), data: quote });
+                        return quote;
+                    }
+                }
+            } catch (vpsErr) {
+                console.warn('[StockAPI] VPS live board gateway failed, trying DChart fallback:', vpsErr);
+            }
+        }
+
+        // 2. Universal Chart/Index Gateway (VNDirect DChart - Open CORS for GitHub Pages & Web)
         try {
             const nowSec = Math.floor(Date.now() / 1000);
             const fromSec = nowSec - (240 * 86400); // ~160 trading sessions
@@ -406,28 +470,34 @@ const StockAPI = {
     /**
      * Build quote from live network numbers
      */
-    buildQuoteObject(ticker, currentPrice, refPrice, openPrice, highestPrice, lowestPrice, volume, isIndex, rawData = null, multiplier = 1) {
+    buildQuoteObject(ticker, currentPrice, refPrice, openPrice, highestPrice, lowestPrice, volume, isIndex, rawData = null, multiplier = 1, liveMeta = null) {
         const db = window.VN_STOCKS_DB || {};
         const meta = db[ticker] || {};
         const exchange = isIndex ? 'INDEX' : (meta.ex || this.detectExchange(ticker));
         const companyName = isIndex ? `${ticker} Index` : (meta.n || `${ticker} Corporation`);
 
-        const change = Math.round((currentPrice - refPrice) * 100) / 100;
-        const percentChange = refPrice > 0 ? Math.round(((currentPrice - refPrice) / refPrice) * 10000) / 100 : 0;
+        let change = Math.round((currentPrice - refPrice) * 100) / 100;
+        let percentChange = refPrice > 0 ? Math.round(((currentPrice - refPrice) / refPrice) * 10000) / 100 : 0;
 
         let ceilingPrice = currentPrice;
         let floorPrice = currentPrice;
         if (!isIndex) {
             const limitRate = exchange === 'HNX' ? 0.10 : exchange === 'UPCOM' ? 0.15 : 0.07;
-            ceilingPrice = meta.c || Math.round(refPrice * (1 + limitRate) / 100) * 100;
-            floorPrice = meta.f || Math.round(refPrice * (1 - limitRate) / 100) * 100;
+            ceilingPrice = (liveMeta && liveMeta.ceil) ? liveMeta.ceil : Math.round(refPrice * (1 + limitRate));
+            floorPrice = (liveMeta && liveMeta.floor) ? liveMeta.floor : Math.round(refPrice * (1 - limitRate));
+            if (liveMeta && liveMeta.change !== undefined) change = liveMeta.change;
+            if (liveMeta && liveMeta.pct !== undefined) percentChange = liveMeta.pct;
         }
 
         let status = 'ref';
-        if (change > 0) {
-            status = (!isIndex && currentPrice >= ceilingPrice) ? 'ceiling' : 'up';
+        if (!isIndex && ceilingPrice > refPrice && currentPrice >= ceilingPrice) {
+            status = 'ceiling';
+        } else if (!isIndex && floorPrice < refPrice && currentPrice <= floorPrice) {
+            status = 'floor';
+        } else if (change > 0) {
+            status = 'up';
         } else if (change < 0) {
-            status = (!isIndex && currentPrice <= floorPrice) ? 'floor' : 'down';
+            status = 'down';
         }
 
         const marketCap = currentPrice * 1000000000;
@@ -442,13 +512,19 @@ const StockAPI = {
         };
         const technicalSummary = rawData ? this.computeTechnicalIndicators(rawData, multiplier) : null;
 
+        const foreignBuy = (liveMeta && liveMeta.foreignBuy !== undefined) ? liveMeta.foreignBuy : (meta.bf || Math.round(volume * 0.12));
+        const foreignSell = (liveMeta && liveMeta.foreignSell !== undefined) ? liveMeta.foreignSell : (meta.sf || Math.round(volume * 0.08));
+        const foreignNet = (liveMeta && liveMeta.foreignBuy !== undefined && liveMeta.foreignSell !== undefined) 
+            ? (liveMeta.foreignBuy - liveMeta.foreignSell) 
+            : ((meta.bf && meta.sf) ? (meta.bf - meta.sf) : Math.round(volume * 0.04));
+
         return {
             ticker: ticker,
             name: companyName,
             exchange: exchange,
             isIndex: isIndex,
-            isLiveRealtimeFeed: Boolean(rawData),
-            dataSource: rawData ? "live_exchange_feed" : "database_snapshot",
+            isLiveRealtimeFeed: Boolean(rawData || liveMeta),
+            dataSource: liveMeta ? "vps_realtime_board" : (rawData ? "live_exchange_feed" : "database_snapshot"),
             currentPrice: currentPrice,
             referencePrice: refPrice,
             change: change,
@@ -461,9 +537,9 @@ const StockAPI = {
             volume: volume,
             volumeAnalysis: volumeAnalysis,
             technicalSummary: technicalSummary,
-            foreignBuy: meta.bf || Math.round(volume * 0.12),
-            foreignSell: meta.sf || Math.round(volume * 0.08),
-            foreignNet: (meta.bf && meta.sf) ? (meta.bf - meta.sf) : Math.round(volume * 0.04),
+            foreignBuy: foreignBuy,
+            foreignSell: foreignSell,
+            foreignNet: foreignNet,
             marketCap: marketCap,
             yearHigh: Math.round(currentPrice * 1.25),
             yearLow: Math.round(currentPrice * 0.78),

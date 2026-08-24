@@ -630,6 +630,12 @@ body {
     font-family: var(--font-mono);
 }
 
+.hero-price.up { color: var(--color-up); }
+.hero-price.down { color: var(--color-down); }
+.hero-price.ref { color: var(--color-ref); }
+.hero-price.ceiling { color: var(--color-ceiling); }
+.hero-price.floor { color: var(--color-floor); }
+
 .hero-change {
     font-size: 0.85rem;
     font-weight: 600;
