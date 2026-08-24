@@ -37,7 +37,7 @@
                 <div class="brand-logo">📈</div>
                 <div>
                     <div class="brand-title">
-                        QPM Stock AI <span class="brand-badge">Realtime</span> <span class="app-version-badge" id="app-version-badge" title="Phiên bản ứng dụng">v1.4</span>
+                        QPM Stock AI <span class="brand-badge">Realtime</span> <span class="app-version-badge" id="app-version-badge" title="Phiên bản ứng dụng">v1.5</span>
                     </div>
                 </div>
             </div>
@@ -193,11 +193,11 @@
                 </div>
             </div>
 
-            <!-- Commodities & Gold Market Panel -->
+            <!-- Gold Market Panel -->
             <div class="panel-card commodities-card">
                 <div class="commodities-header">
-                    <div class="commodities-title">🏆 Giá Vàng & Hàng Hóa</div>
-                    <button class="commodities-refresh-btn" id="btn-refresh-commodities" title="Làm mới giá vàng & dầu">🔄 Làm mới</button>
+                    <div class="commodities-title">🏆 Bảng Giá Vàng Trực Tuyến</div>
+                    <button class="commodities-refresh-btn" id="btn-refresh-commodities" title="Làm mới giá vàng">🔄 Làm mới</button>
                 </div>
                 <div class="commodities-last-update" id="commodities-last-update">Đang tải dữ liệu...</div>
 
@@ -258,25 +258,10 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Crude Oil -->
-                    <div class="comm-item">
-                        <div class="comm-item-header">
-                            <span class="comm-icon">🛢️</span>
-                            <span class="comm-name">Dầu Thô WTI (Crude Oil)</span>
-                            <span class="comm-trend" id="trend-oil">--</span>
-                        </div>
-                        <div class="comm-price-row">
-                            <div class="comm-price-col">
-                                <span class="comm-label">Giá khớp</span>
-                                <span class="comm-val" id="price-oil">--</span>
-                            </div>
-                            <div class="comm-price-col">
-                                <span class="comm-label">Đơn vị</span>
-                                <span class="comm-val" style="color: var(--text-muted); font-size: 0.78rem;">USD / bbl</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="commodities-note">
+                    * Mức +/- và % phản ánh biến động lũy kế cả phiên (so với giá mở cửa đầu ngày của DOJI & SJC, và 24h đối với Vàng Thế giới).
                 </div>
             </div>
 
@@ -322,7 +307,7 @@
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">QPM Stock v1.4</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">QPM Stock v1.5</span>
                 <button class="btn-primary" id="btn-save-settings">Lưu Cấu Hình</button>
             </div>
         </div>

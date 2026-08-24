@@ -644,10 +644,10 @@ const StockAPI = {
     },
 
     /**
-     * Fetch Live Gold & Commodity Prices (SJC, DOJI, World Gold, Crude Oil)
+     * Fetch Live Gold Prices (SJC, DOJI, World Spot Gold XAU/USD)
      */
     async getCommoditiesPrices() {
-        const cacheKey = 'commodities_prices';
+        const cacheKey = 'gold_prices';
         const cached = this.cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
             return cached.data;
@@ -655,76 +655,120 @@ const StockAPI = {
 
         try {
             const p1 = fetch('https://www.vang.today/api/prices').then(res => res.json()).catch(() => null);
-            const p2 = fetch('https://script.google.com/macros/s/AKfycbzgehE46dQ-oMGOTRLh71L02VykMBsImfOcu9ePvqZwnO0lV2vc6k5-RQh9FWOXE6C6/exec').then(res => res.json()).catch(() => null);
+            const p2 = fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(res => res.json()).catch(() => null);
 
-            const [dojiData, globalData] = await Promise.all([p1, p2]);
+            const [dojiData, worldGoldFeed] = await Promise.all([p1, p2]);
 
             let result = {
                 timestamp: Date.now(),
+                sourceTimestamp: dojiData && dojiData.timestamp ? dojiData.timestamp * 1000 : null,
+                sourceTime: dojiData ? dojiData.time : null,
+                sourceDate: dojiData ? dojiData.date : null,
                 sjc: null,
                 ring: null,
-                worldGold: null,
-                crudeOil: null
+                worldGold: null
             };
+
+            // 1. Session Baseline Tracking for Vietnam Gold (SJC & DOJI)
+            const todayStr = (dojiData && dojiData.date) ? dojiData.date : new Date().toISOString().slice(0, 10);
+            let vnGoldBaseline = null;
+            try {
+                const raw = localStorage.getItem('qpm_gold_session_baseline');
+                if (raw) vnGoldBaseline = JSON.parse(raw);
+            } catch (e) {}
 
             if (dojiData && dojiData.success && dojiData.prices) {
                 const sjc = dojiData.prices['DOHNL'] || dojiData.prices['DOHCML'];
+                const ring = dojiData.prices['DOJINHTV'];
+
+                // If today is a new day compared to stored baseline
+                if (!vnGoldBaseline || vnGoldBaseline.date !== todayStr) {
+                    const prevCloseSjc = (vnGoldBaseline && vnGoldBaseline.lastSjcBuy > 0) ? vnGoldBaseline.lastSjcBuy : null;
+                    const prevCloseRing = (vnGoldBaseline && vnGoldBaseline.lastRingBuy > 0) ? vnGoldBaseline.lastRingBuy : null;
+
+                    vnGoldBaseline = {
+                        date: todayStr,
+                        // Inherit yesterday's close as today's open baseline if available
+                        sjcOpen: prevCloseSjc || (sjc ? (sjc.buy - (sjc.change_buy || 0)) : 0),
+                        ringOpen: prevCloseRing || (ring ? (ring.buy - (ring.change_buy || 0)) : 0),
+                        lastSjcBuy: sjc ? sjc.buy : 0,
+                        lastRingBuy: ring ? ring.buy : 0
+                    };
+                } else {
+                    // Update latest price of today as candidate for closing price
+                    if (sjc) vnGoldBaseline.lastSjcBuy = sjc.buy;
+                    if (ring) vnGoldBaseline.lastRingBuy = ring.buy;
+                }
+
+                try {
+                    localStorage.setItem('qpm_gold_session_baseline', JSON.stringify(vnGoldBaseline));
+                } catch (e) {}
+
                 if (sjc) {
-                    const prev = sjc.buy - (sjc.change_buy || 0);
-                    const pct = prev > 0 ? Number(((sjc.change_buy / prev) * 100).toFixed(2)) : 0;
+                    const openPrice = (vnGoldBaseline && vnGoldBaseline.sjcOpen > 0) 
+                        ? vnGoldBaseline.sjcOpen 
+                        : (sjc.buy - (sjc.change_buy || 0));
+                    const change = sjc.buy - openPrice;
+                    const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
                     result.sjc = {
                         name: 'Vàng miếng SJC',
                         buy: sjc.buy,
                         sell: sjc.sell,
-                        change: sjc.change_buy || 0,
+                        openBuy: openPrice,
+                        change: change,
                         percentChange: pct
                     };
                 }
 
-                const ring = dojiData.prices['DOJINHTV'];
                 if (ring) {
-                    const prev = ring.buy - (ring.change_buy || 0);
-                    const pct = prev > 0 ? Number(((ring.change_buy / prev) * 100).toFixed(2)) : 0;
+                    const openPrice = (vnGoldBaseline && vnGoldBaseline.ringOpen > 0) 
+                        ? vnGoldBaseline.ringOpen 
+                        : (ring.buy - (ring.change_buy || 0));
+                    const change = ring.buy - openPrice;
+                    const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
                     result.ring = {
                         name: 'Nhẫn tròn DOJI',
                         buy: ring.buy,
                         sell: ring.sell,
-                        change: ring.change_buy || 0,
-                        percentChange: pct
-                    };
-                }
-
-                const goldData = dojiData.prices['XAUUSD'];
-                if (goldData) {
-                    const buy = Number(goldData.buy) || 0;
-                    const change = Number(goldData.change_buy) || 0;
-                    const prev = buy - change;
-                    const pct = prev > 0 ? Number(((change / prev) * 100).toFixed(2)) : 0;
-                    result.worldGold = {
-                        name: 'Vàng Thế giới (XAU/USD)',
-                        price: buy,
+                        openBuy: openPrice,
                         change: change,
-                        percentChange: pct,
-                        unit: 'USD/oz'
+                        percentChange: pct
                     };
                 }
             }
 
-            if (globalData && globalData.success && globalData.data && globalData.data['Oil']) {
-                const oil = globalData.data['Oil'];
-                result.crudeOil = {
-                    name: 'Dầu Thô WTI (Crude Oil)',
-                    price: Number(oil.price) || 0,
-                    change: Number(oil.change) || 0,
-                    percentChange: parseFloat(oil.percent) || 0,
-                    unit: 'USD/bbl'
+            // 2. World Gold with 24h real-time session change from Global Direct Feed
+            if (worldGoldFeed && worldGoldFeed.lastPrice) {
+                const curPrice = Number(worldGoldFeed.lastPrice) || 0;
+                const change = Number(worldGoldFeed.priceChange) || 0;
+                const pct = Number(worldGoldFeed.priceChangePercent) || 0;
+                result.worldGold = {
+                    name: 'Vàng Thế giới (XAU/USD)',
+                    price: curPrice,
+                    change: change,
+                    percentChange: pct,
+                    unit: 'USD/oz'
+                };
+            } else if (dojiData && dojiData.prices && dojiData.prices['XAUUSD']) {
+                // Fallback
+                const g = dojiData.prices['XAUUSD'];
+                const buy = Number(g.buy) || 0;
+                const change = Number(g.change_buy) || 0;
+                const prev = buy - change;
+                const pct = prev > 0 ? Number(((change / prev) * 100).toFixed(2)) : 0;
+                result.worldGold = {
+                    name: 'Vàng Thế giới (XAU/USD)',
+                    price: buy,
+                    change: change,
+                    percentChange: pct,
+                    unit: 'USD/oz'
                 };
             }
 
             this.cache.set(cacheKey, { timestamp: Date.now(), data: result });
             return result;
         } catch (e) {
-            console.error('[StockAPI] Error fetching commodities:', e);
+            console.error('[StockAPI] Error fetching gold prices:', e);
             throw e;
         }
     },

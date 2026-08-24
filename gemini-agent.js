@@ -120,7 +120,7 @@ class GeminiStockAgent {
                     },
                     {
                         name: "get_commodities_prices",
-                        description: "Tra cứu giá vàng trực tiếp (vàng miếng SJC, nhẫn tròn DOJI Hưng Thịnh Vượng, vàng thế giới XAU/USD) và giá dầu thô WTI (Crude Oil) mới nhất.",
+                        description: "Tra cứu giá vàng trực tiếp gồm vàng miếng SJC, nhẫn tròn DOJI Hưng Thịnh Vượng và giá vàng thế giới XAU/USD (Spot Gold) mới nhất.",
                         parameters: {
                             type: "OBJECT",
                             properties: {}

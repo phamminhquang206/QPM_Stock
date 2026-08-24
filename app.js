@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // App Version
-    window.APP_VERSION = 'v1.4';
+    window.APP_VERSION = 'v1.5';
     console.log(`[QPM Stock AI] Version: ${window.APP_VERSION}`);
 
     // 1. Initialize Components
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wlAddInput = document.getElementById('wl-add-input');
     const btnWlAddConfirm = document.getElementById('btn-wl-add-confirm');
 
-    // Commodities Elements
+    // Gold Elements
     const priceSjcBuy = document.getElementById('price-sjc-buy');
     const priceSjcSell = document.getElementById('price-sjc-sell');
     const trendSjc = document.getElementById('trend-sjc');
@@ -55,8 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const trendRing = document.getElementById('trend-ring');
     const priceGold = document.getElementById('price-gold');
     const trendGold = document.getElementById('trend-gold');
-    const priceOil = document.getElementById('price-oil');
-    const trendOil = document.getElementById('trend-oil');
     const commLastUpdate = document.getElementById('commodities-last-update');
     const btnRefreshCommodities = document.getElementById('btn-refresh-commodities');
 
@@ -358,15 +356,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateCommodityTrend(trendGold, data.worldGold.change, data.worldGold.percentChange, 'USD');
             }
 
-            // Crude Oil
-            if (data && data.crudeOil && priceOil) {
-                priceOil.textContent = `$${data.crudeOil.price.toFixed(2)}`;
-                updateCommodityTrend(trendOil, data.crudeOil.change, data.crudeOil.percentChange, 'USD');
-            }
-
             if (commLastUpdate) {
-                const now = new Date();
-                commLastUpdate.textContent = `Cập nhật: ${now.toLocaleTimeString('vi-VN')} ${now.toLocaleDateString('vi-VN')}`;
+                if (data && data.sourceTimestamp) {
+                    const sourceDate = new Date(data.sourceTimestamp);
+                    commLastUpdate.textContent = `Nguồn DOJI/SJC: ${sourceDate.toLocaleTimeString('vi-VN')} ${sourceDate.toLocaleDateString('vi-VN')}`;
+                } else if (data && data.sourceTime && data.sourceDate) {
+                    commLastUpdate.textContent = `Nguồn DOJI/SJC: ${data.sourceTime} ${data.sourceDate}`;
+                } else {
+                    const now = new Date();
+                    commLastUpdate.textContent = `Cập nhật: ${now.toLocaleTimeString('vi-VN')} ${now.toLocaleDateString('vi-VN')}`;
+                }
             }
         } catch (err) {
             console.error('Failed loading commodities:', err);

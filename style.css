@@ -1282,4 +1282,15 @@ body {
     color: var(--text-primary);
 }
 
+.commodities-note {
+    margin-top: 12px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    border-left: 2px solid var(--accent-primary);
+}
+
 
