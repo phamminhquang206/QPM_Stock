@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // App Version
-    window.APP_VERSION = 'v1.3';
+    window.APP_VERSION = 'v1.4';
     console.log(`[QPM Stock AI] Version: ${window.APP_VERSION}`);
 
     // 1. Initialize Components
@@ -46,6 +46,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const wlAddInput = document.getElementById('wl-add-input');
     const btnWlAddConfirm = document.getElementById('btn-wl-add-confirm');
 
+    // Commodities Elements
+    const priceSjcBuy = document.getElementById('price-sjc-buy');
+    const priceSjcSell = document.getElementById('price-sjc-sell');
+    const trendSjc = document.getElementById('trend-sjc');
+    const priceRingBuy = document.getElementById('price-ring-buy');
+    const priceRingSell = document.getElementById('price-ring-sell');
+    const trendRing = document.getElementById('trend-ring');
+    const priceGold = document.getElementById('price-gold');
+    const trendGold = document.getElementById('trend-gold');
+    const priceOil = document.getElementById('price-oil');
+    const trendOil = document.getElementById('trend-oil');
+    const commLastUpdate = document.getElementById('commodities-last-update');
+    const btnRefreshCommodities = document.getElementById('btn-refresh-commodities');
+
     let currentSelectedTicker = 'FPT';
     window.currentStockTicker = 'FPT';
     const WATCHLIST_KEY = 'qpm_watchlist';
@@ -63,19 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveWatchlist(list) {
-        localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+        try {
+            localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+        } catch (e) {}
     }
 
     function addToWatchlist(symbol) {
         const sym = symbol.trim().toUpperCase();
         if (!sym) return;
-        const list = getSavedWatchlist();
+        let list = getSavedWatchlist();
         if (list.includes(sym)) {
-            // Flash highlight nếu đã có
-            const existing = document.getElementById(`wl-${sym}`);
-            if (existing) {
-                existing.classList.add('wl-item-flash');
-                setTimeout(() => existing.classList.remove('wl-item-flash'), 800);
+            const el = document.getElementById(`wl-${sym}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                el.classList.add('wl-item-flash');
+                setTimeout(() => el.classList.remove('wl-item-flash'), 1000);
             }
             return;
         }
@@ -100,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTickerToInspector('FPT');
     loadMarketTicker();
     loadWatchlist();
+    loadCommodities();
     updateApiKeyStatusUI();
 
     // Watchlist Add Toggle
@@ -131,8 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Auto-refresh market indices every 30s
+    if (btnRefreshCommodities) {
+        btnRefreshCommodities.addEventListener('click', () => {
+            loadCommodities(true);
+        });
+    }
+
+    // Auto-refresh market indices every 30s, commodities every 60s
     setInterval(loadMarketTicker, 30000);
+    setInterval(loadCommodities, 60000);
 
     // 3. API Key & Settings Event Handlers
     btnOpenSettings.addEventListener('click', () => {
@@ -303,7 +327,89 @@ document.addEventListener('DOMContentLoaded', () => {
         return '#f59e0b';
     }
 
-    // 6. Stock Inspector Loader
+    // 6. Commodities Loader (DOJI, SJC, World Gold, Crude Oil)
+    async function loadCommodities(forceRefresh = false) {
+        if (btnRefreshCommodities) btnRefreshCommodities.classList.add('loading');
+        if (commLastUpdate) commLastUpdate.textContent = 'Đang đồng bộ dữ liệu...';
+
+        try {
+            if (forceRefresh && window.StockAPI.cache) {
+                window.StockAPI.cache.delete('commodities_prices');
+            }
+            const data = await window.StockAPI.getCommoditiesPrices();
+
+            // SJC
+            if (data && data.sjc && priceSjcBuy && priceSjcSell) {
+                priceSjcBuy.textContent = formatGoldPrice(data.sjc.buy);
+                priceSjcSell.textContent = formatGoldPrice(data.sjc.sell);
+                updateCommodityTrend(trendSjc, data.sjc.change, data.sjc.percentChange, 'VND');
+            }
+
+            // DOJI Ring
+            if (data && data.ring && priceRingBuy && priceRingSell) {
+                priceRingBuy.textContent = formatGoldPrice(data.ring.buy);
+                priceRingSell.textContent = formatGoldPrice(data.ring.sell);
+                updateCommodityTrend(trendRing, data.ring.change, data.ring.percentChange, 'VND');
+            }
+
+            // World Gold
+            if (data && data.worldGold && priceGold) {
+                priceGold.textContent = `$${data.worldGold.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                updateCommodityTrend(trendGold, data.worldGold.change, data.worldGold.percentChange, 'USD');
+            }
+
+            // Crude Oil
+            if (data && data.crudeOil && priceOil) {
+                priceOil.textContent = `$${data.crudeOil.price.toFixed(2)}`;
+                updateCommodityTrend(trendOil, data.crudeOil.change, data.crudeOil.percentChange, 'USD');
+            }
+
+            if (commLastUpdate) {
+                const now = new Date();
+                commLastUpdate.textContent = `Cập nhật: ${now.toLocaleTimeString('vi-VN')} ${now.toLocaleDateString('vi-VN')}`;
+            }
+        } catch (err) {
+            console.error('Failed loading commodities:', err);
+            if (commLastUpdate) commLastUpdate.textContent = 'Lỗi kết nối dữ liệu hàng hóa';
+        } finally {
+            if (btnRefreshCommodities) btnRefreshCommodities.classList.remove('loading');
+        }
+    }
+
+    function formatGoldPrice(val) {
+        if (!val || isNaN(val)) return '--';
+        return `${val.toLocaleString('vi-VN')} đ`;
+    }
+
+    function updateCommodityTrend(el, change, pct, currency = 'VND') {
+        if (!el) return;
+        if (change === 0 || change === null || change === undefined) {
+            el.textContent = '0.00%';
+            el.className = 'comm-trend';
+            return;
+        }
+
+        const isUp = change > 0;
+        let changeFormatted = '';
+        if (currency === 'VND') {
+            const abs = Math.abs(change);
+            if (abs >= 1000000) {
+                changeFormatted = `${(change / 1000000).toFixed(1)}Tr`;
+            } else if (abs >= 1000) {
+                changeFormatted = `${(change / 1000).toFixed(0)}K`;
+            } else {
+                changeFormatted = change.toLocaleString('vi-VN');
+            }
+        } else {
+            changeFormatted = `${change > 0 ? '+' : ''}${change.toFixed(2)}`;
+        }
+
+        const sign = isUp ? '+' : '';
+        el.textContent = `${sign}${changeFormatted} (${sign}${pct}%)`;
+        el.className = `comm-trend ${isUp ? 'up' : 'down'}`;
+    }
+
+    // 7. Stock Inspector Loader
     async function loadTickerToInspector(symbol) {
         currentSelectedTicker = symbol.toUpperCase();
         heroSymbol.textContent = currentSelectedTicker;

@@ -644,6 +644,92 @@ const StockAPI = {
     },
 
     /**
+     * Fetch Live Gold & Commodity Prices (SJC, DOJI, World Gold, Crude Oil)
+     */
+    async getCommoditiesPrices() {
+        const cacheKey = 'commodities_prices';
+        const cached = this.cache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
+            return cached.data;
+        }
+
+        try {
+            const p1 = fetch('https://www.vang.today/api/prices').then(res => res.json()).catch(() => null);
+            const p2 = fetch('https://script.google.com/macros/s/AKfycbzgehE46dQ-oMGOTRLh71L02VykMBsImfOcu9ePvqZwnO0lV2vc6k5-RQh9FWOXE6C6/exec').then(res => res.json()).catch(() => null);
+
+            const [dojiData, globalData] = await Promise.all([p1, p2]);
+
+            let result = {
+                timestamp: Date.now(),
+                sjc: null,
+                ring: null,
+                worldGold: null,
+                crudeOil: null
+            };
+
+            if (dojiData && dojiData.success && dojiData.prices) {
+                const sjc = dojiData.prices['DOHNL'] || dojiData.prices['DOHCML'];
+                if (sjc) {
+                    const prev = sjc.buy - (sjc.change_buy || 0);
+                    const pct = prev > 0 ? Number(((sjc.change_buy / prev) * 100).toFixed(2)) : 0;
+                    result.sjc = {
+                        name: 'Vàng miếng SJC',
+                        buy: sjc.buy,
+                        sell: sjc.sell,
+                        change: sjc.change_buy || 0,
+                        percentChange: pct
+                    };
+                }
+
+                const ring = dojiData.prices['DOJINHTV'];
+                if (ring) {
+                    const prev = ring.buy - (ring.change_buy || 0);
+                    const pct = prev > 0 ? Number(((ring.change_buy / prev) * 100).toFixed(2)) : 0;
+                    result.ring = {
+                        name: 'Nhẫn tròn DOJI',
+                        buy: ring.buy,
+                        sell: ring.sell,
+                        change: ring.change_buy || 0,
+                        percentChange: pct
+                    };
+                }
+
+                const goldData = dojiData.prices['XAUUSD'];
+                if (goldData) {
+                    const buy = Number(goldData.buy) || 0;
+                    const change = Number(goldData.change_buy) || 0;
+                    const prev = buy - change;
+                    const pct = prev > 0 ? Number(((change / prev) * 100).toFixed(2)) : 0;
+                    result.worldGold = {
+                        name: 'Vàng Thế giới (XAU/USD)',
+                        price: buy,
+                        change: change,
+                        percentChange: pct,
+                        unit: 'USD/oz'
+                    };
+                }
+            }
+
+            if (globalData && globalData.success && globalData.data && globalData.data['Oil']) {
+                const oil = globalData.data['Oil'];
+                result.crudeOil = {
+                    name: 'Dầu Thô WTI (Crude Oil)',
+                    price: Number(oil.price) || 0,
+                    change: Number(oil.change) || 0,
+                    percentChange: parseFloat(oil.percent) || 0,
+                    unit: 'USD/bbl'
+                };
+            }
+
+            this.cache.set(cacheKey, { timestamp: Date.now(), data: result });
+            return result;
+        } catch (e) {
+            console.error('[StockAPI] Error fetching commodities:', e);
+            throw e;
+        }
+    },
+
+    /**
      * Fetch Historical Candlestick Bars for Charting
      */
     async getHistoricalBars(symbol, resolution = 'D', days = 90) {

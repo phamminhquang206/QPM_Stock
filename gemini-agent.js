@@ -117,6 +117,14 @@ class GeminiStockAgent {
                             },
                             required: ["symbol"]
                         }
+                    },
+                    {
+                        name: "get_commodities_prices",
+                        description: "Tra cứu giá vàng trực tiếp (vàng miếng SJC, nhẫn tròn DOJI Hưng Thịnh Vượng, vàng thế giới XAU/USD) và giá dầu thô WTI (Crude Oil) mới nhất.",
+                        parameters: {
+                            type: "OBJECT",
+                            properties: {}
+                        }
                     }
                 ]
             }
@@ -281,6 +289,9 @@ Khi phân tích một mã cổ phiếu (khi có đầy đủ dữ liệu nến r
                         const days = toolArgs.days || 30;
                         toolResult = await window.StockAPI.getHistoricalBars(symbol, 'D', days);
                         toolResultsGathered.push({ type: 'history', symbol: symbol, data: toolResult });
+                    } else if (toolName === "get_commodities_prices") {
+                        toolResult = await window.StockAPI.getCommoditiesPrices();
+                        toolResultsGathered.push({ type: 'commodities', data: toolResult });
                     } else {
                         toolResult = { error: `Function ${toolName} not found` };
                     }
