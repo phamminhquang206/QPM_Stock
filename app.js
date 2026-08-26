@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const promptChips = document.getElementById('prompt-chips');
     const marketTickerBar = document.getElementById('market-ticker-bar');
     const searchInput = document.getElementById('search-input');
+    const btnAppReload = document.getElementById('btn-app-reload');
     const apiKeyModal = document.getElementById('api-key-modal');
     const btnOpenSettings = document.getElementById('btn-open-settings');
     const btnCloseModal = document.getElementById('btn-close-modal');
@@ -666,6 +667,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Linebreaks
         html = html.replace(/\n/g, '<br/>');
         return html;
+    }
+
+    // ===== 6.1 APP RELOAD (F5 BROWSER SIMULATION) =====
+    if (btnAppReload) {
+        btnAppReload.addEventListener('click', () => {
+            btnAppReload.classList.add('reloading');
+            try {
+                sessionStorage.clear();
+            } catch (e) {}
+            setTimeout(() => {
+                window.location.reload();
+            }, 120);
+        });
     }
 
     // ===== 7. PROGRESSIVE WEB APP (PWA) REGISTRATION & INSTALLATION =====
