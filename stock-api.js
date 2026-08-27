@@ -51,6 +51,296 @@ const StockAPI = {
     },
 
     /**
+     * Dictionary of Official Names for Top / Major Vietnamese Equities
+     */
+    TOP_STOCKS_NAMES: {
+        'FPT': 'Công ty Cổ phần FPT',
+        'HPG': 'Công ty Cổ phần Tập đoàn Hòa Phát',
+        'SSI': 'Công ty Cổ phần Chứng khoán SSI',
+        'VND': 'Công ty Cổ phần Chứng khoán VNDIRECT',
+        'VIX': 'Công ty Cổ phần Chứng khoán VIX',
+        'SHS': 'Công ty Cổ phần Chứng khoán Sài Gòn - Hà Nội',
+        'HCM': 'Công ty Cổ phần Chứng khoán TP.HCM (HSC)',
+        'MBS': 'Công ty Cổ phần Chứng khoán MB',
+        'VCI': 'Công ty Cổ phần Chứng khoán Vietcap',
+        'TCB': 'Ngân hàng TMCP Kỹ thương Việt Nam (Techcombank)',
+        'MBB': 'Ngân hàng TMCP Quân đội (MBBank)',
+        'ACB': 'Ngân hàng TMCP Á Châu',
+        'VCB': 'Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)',
+        'BID': 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam (BIDV)',
+        'CTG': 'Ngân hàng TMCP Công Thương Việt Nam (VietinBank)',
+        'VPB': 'Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank)',
+        'STB': 'Ngân hàng TMCP Sài Gòn Thương Tín (Sacombank)',
+        'HDB': 'Ngân hàng TMCP Phát triển TP.HCM (HDBank)',
+        'TPB': 'Ngân hàng TMCP Tiên Phong (TPBank)',
+        'SHB': 'Ngân hàng TMCP Sài Gòn - Hà Nội',
+        'LPB': 'Ngân hàng TMCP Lộc Phát Việt Nam (LPBank)',
+        'MSB': 'Ngân hàng TMCP Hàng Hải Việt Nam',
+        'VIB': 'Ngân hàng TMCP Quốc tế Việt Nam',
+        'SSB': 'Ngân hàng TMCP Đông Nam Á (SeABank)',
+        'MWG': 'Công ty Cổ phần Đầu tư Thế Giới Di Động',
+        'PNJ': 'Công ty Cổ phần Vàng bạc Đá quý Phú Nhuận',
+        'FRT': 'Công ty Cổ phần Bán lẻ Kỹ thuật số FPT (FPT Retail)',
+        'DGW': 'Công ty Cổ phần Thế Giới Số (Digiworld)',
+        'MSN': 'Công ty Cổ phần Tập đoàn Masan',
+        'VIC': 'Tập đoàn Vingroup - Công ty Cổ phần',
+        'VHM': 'Công ty Cổ phần Vinhomes',
+        'VRE': 'Công ty Cổ phần Vincom Retail',
+        'NVL': 'Công ty Cổ phần Tập đoàn Đầu tư Địa ốc No Va (Novaland)',
+        'PDR': 'Công ty Cổ phần Phát triển Bất động sản Phát Đạt',
+        'DIG': 'Tổng Công ty Cổ phần Đầu tư Phát triển Xây dựng (DIC Corp)',
+        'DXG': 'Công ty Cổ phần Tập đoàn Đất Xanh',
+        'KDH': 'Công ty Cổ phần Đầu tư và Kinh doanh Nhà Khang Điền',
+        'NLG': 'Công ty Cổ phần Đầu tư Nam Long',
+        'KBC': 'Tổng Công ty Phát triển Đô thị Kinh Bắc',
+        'IDC': 'Tổng Công ty IDICO - Công ty Cổ phần',
+        'VGC': 'Tổng Công ty Viglacera - Công ty Cổ phần',
+        'SZC': 'Công ty Cổ phần Sonadezi Châu Đức',
+        'BCM': 'Tổng Công ty Đầu tư và Phát triển Công nghiệp (Becamex)',
+        'GAS': 'Tổng Công ty Khí Việt Nam (PV GAS)',
+        'PVD': 'Tổng Công ty Cổ phần Khoan và Dịch vụ Khoan Dầu khí (PV Drilling)',
+        'PVS': 'Tổng Công ty Cổ phần Dịch vụ Kỹ thuật Dầu khí Việt Nam (PTSC)',
+        'BSR': 'Công ty Cổ phần Lọc hóa dầu Bình Sơn',
+        'PLX': 'Tập đoàn Xăng dầu Việt Nam (Petrolimex)',
+        'DRC': 'Công ty Cổ phần Cao su Đà Nẵng',
+        'CSM': 'Công ty Cổ phần Công nghiệp Cao su Miền Nam (Casumina)',
+        'BFC': 'Công ty Cổ phần Phân bón Bình Điền',
+        'LAS': 'Công ty Cổ phần Supe Phốt phát và Hóa chất Lâm Thao',
+        'HUT': 'Công ty Cổ phần Tasco',
+        'TCH': 'Công ty Cổ phần Đầu tư Dịch vụ Tài chính Hoàng Huy',
+        'HHS': 'Công ty Cổ phần Đầu tư Dịch vụ Hoàng Huy',
+        'CII': 'Công ty Cổ phần Đầu tư Hạ tầng Kỹ thuật TP.HCM',
+        'HHV': 'Công ty Cổ phần Đầu tư Hạ tầng Giao thông Đèo Cả',
+        'VCG': 'Tổng Công ty Cổ phần Xuất nhập khẩu và Xây dựng Việt Nam (Vinaconex)',
+        'FCN': 'Công ty Cổ phần FECON',
+        'LCG': 'Công ty Cổ phần LIZEN',
+        'KSB': 'Công ty Cổ phần Khoáng sản và Xây dựng Bình Dương',
+        'DHA': 'Công ty Cổ phần Hóa An',
+        'NHA': 'Tổng Công ty Cổ phần Đầu tư Phát triển Nhà và Đô thị Nam Hà Nội',
+        'SJS': 'Công ty Cổ phần Đầu tư Phát triển Đô thị và Khu công nghiệp Sông Đà (Sudico)',
+        'VPI': 'Công ty Cổ phần Đầu tư Văn Phú - Invest',
+        'CEO': 'Công ty Cổ phần Tập đoàn C.E.O',
+        'HTN': 'Công ty Cổ phần Hưng Thịnh Incons',
+        'DXS': 'Công ty Cổ phần Dịch vụ Bất động sản Đất Xanh',
+        'KHG': 'Công ty Cổ phần Tập đoàn Khải Hoàn Land',
+        'EVF': 'Công ty Cổ phần Tài chính Điện lực (EVN Finance)',
+        'NAB': 'Ngân hàng TMCP Nam Á (Nam A Bank)',
+        'BVB': 'Ngân hàng TMCP Bản Việt (BVBank)',
+        'KLB': 'Ngân hàng TMCP Kiên Long (KienlongBank)',
+        'PGB': 'Ngân hàng TMCP Thịnh vượng và Phát triển (PGBank)',
+        'ABB': 'Ngân hàng TMCP An Bình (ABBank)',
+        'VBB': 'Ngân hàng TMCP Việt Nam Thương Tín (VietBank)',
+        'AGR': 'Công ty Cổ phần Chứng khoán Agribank (Agriseco)',
+        'BSI': 'Công ty Cổ phần Chứng khoán BIDV (BSC)',
+        'CTS': 'Công ty Cổ phần Chứng khoán Ngân hàng Công thương Việt Nam (VietinBank Securities)',
+        'FTS': 'Công ty Cổ phần Chứng khoán FPT (FPTS)',
+        'ORS': 'Công ty Cổ phần Chứng khoán Tiên Phong (TPS)',
+        'TVS': 'Công ty Cổ phần Chứng khoán Thiên Việt',
+        'VDS': 'Công ty Cổ phần Chứng khoán Rồng Việt (VDSC)',
+        'EVS': 'Công ty Cổ phần Chứng khoán Everest',
+        'TVB': 'Công ty Cổ phần Chứng khoán Trí Việt',
+        'BVS': 'Công ty Cổ phần Chứng khoán Bảo Việt (BVSC)',
+        'APG': 'Công ty Cổ phần Chứng khoán APG',
+        'PAN': 'Công ty Cổ phần Tập đoàn PAN',
+        'LTG': 'Công ty Cổ phần Tập đoàn Lộc Trời',
+        'TAR': 'Công ty Cổ phần Nông nghiệp Công nghệ cao Trung An',
+        'ASM': 'Công ty Cổ phần Tập đoàn Sao Mai',
+        'VFG': 'Công ty Cổ phần Khử trùng Việt Nam',
+        'SMC': 'Công ty Cổ phần Đầu tư Thương mại SMC',
+        'POM': 'Công ty Cổ phần Thép Pomina',
+        'TIS': 'Công ty Cổ phần Gang Thép Thái Nguyên (TISCO)',
+        'TVN': 'Tổng Công ty Thép Việt Nam - CTCP (VNSTEEL)',
+        'DDV': 'Công ty Cổ phần DAP - VINACHEM',
+        'SFG': 'Công ty Cổ phần Phân bón Miền Nam',
+        'PSW': 'Công ty Cổ phần Phân bón và Hóa chất Dầu khí Tây Nam Bộ',
+        'PSE': 'Công ty Cổ phần Phân bón và Hóa chất Dầu khí Đông Nam Bộ',
+        'PCE': 'Công ty Cổ phần Phân bón và Hóa chất Dầu khí Miền Trung',
+        'PMB': 'Công ty Cổ phần Phân bón và Hóa chất Dầu khí Miền Bắc',
+        'GSP': 'Công ty Cổ phần Vận tải Sản phẩm Khí Quốc tế',
+        'VIP': 'Công ty Cổ phần Vận tải Xăng dầu VIPCO',
+        'VTO': 'Công ty Cổ phần Vận tải Xăng dầu Vitaco',
+        'PVP': 'Công ty Cổ phần Vận tải Dầu khí Thái Bình Dương (PVTrans Pacific)',
+        'TCL': 'Công ty Cổ phần Đại lý Giao nhận Vận tải Xếp dỡ Tân Cảng',
+        'TCW': 'Công ty Cổ phần Kho vận Tân Cảng',
+        'VSC': 'Công ty Cổ phần Container Việt Nam (Viconship)',
+        'DVP': 'Công ty Cổ phần Đầu tư và Phát triển Cảng Đình Vũ',
+        'SGP': 'Công ty Cổ phần Cảng Sài Gòn',
+        'PHP': 'Công ty Cổ phần Cảng Hải Phòng',
+        'CDN': 'Công ty Cổ phần Cảng Đà Nẵng',
+        'PDN': 'Công ty Cổ phần Cảng Đồng Nai',
+        'QNP': 'Công ty Cổ phần Cảng Quy Nhơn',
+        'HNA': 'Công ty Cổ phần Thủy điện Hủa Na',
+        'SJD': 'Công ty Cổ phần Thủy điện Cần Đơn',
+        'SBA': 'Công ty Cổ phần Sông Ba',
+        'VSH': 'Công ty Cổ phần Thủy điện Vĩnh Sơn - Sông Hinh',
+        'TMP': 'Công ty Cổ phần Thủy điện Thác Mơ',
+        'TBC': 'Công ty Cổ phần Thủy điện Thác Bà',
+        'SHP': 'Công ty Cổ phần Thủy điện Miền Nam',
+        'HND': 'Công ty Cổ phần Nhiệt điện Hải Phòng',
+        'QTP': 'Công ty Cổ phần Nhiệt điện Quảng Ninh',
+        'BWE': 'Công ty Cổ phần Nước - Môi trường Bình Dương (Biwase)',
+        'TDM': 'Công ty Cổ phần Nước Thủ Dầu Một',
+        'DNW': 'Công ty Cổ phần Cấp nước Đồng Nai',
+        'NAW': 'Công ty Cổ phần Cấp nước Nghệ An',
+        'RDP': 'Công ty Cổ phần Rạng Đông Holding',
+        'DAG': 'Công ty Cổ phần Tập đoàn Nhựa Đông Á',
+        'DCL': 'Công ty Cổ phần Dược phẩm Cửu Long',
+        'OPC': 'Công ty Cổ phần Dược phẩm OPC',
+        'TRA': 'Công ty Cổ phần Traphaco',
+        'VMD': 'Công ty Cổ phần Y Dược phẩm Vimedimex',
+        'AMV': 'Công ty Cổ phần Sản xuất Kinh doanh Dược và Trang thiết bị Y tế Việt Mỹ',
+        'DCM': 'Công ty Cổ phần Phân bón Dầu khí Cà Mau (PVCFC)',
+        'DPM': 'Tổng Công ty Phân bón và Hóa chất Dầu khí (PVFCCo)',
+        'GVR': 'Tập đoàn Công nghiệp Cao su Việt Nam',
+        'DPR': 'Công ty Cổ phần Cao su Đồng Phú',
+        'PHR': 'Công ty Cổ phần Cao su Phước Hòa',
+        'DRI': 'Công ty Cổ phần Đầu tư Cao su Đắk Lắk',
+        'VNM': 'Công ty Cổ phần Sữa Việt Nam (Vinamilk)',
+        'SAB': 'Tổng Công ty Cổ phần Bia - Rượu - Nước giải khát Sài Gòn (Sabeco)',
+        'BHN': 'Tổng Công ty Cổ phần Bia - Rượu - Nước giải khát Hà Nội (Habeco)',
+        'KDC': 'Công ty Cổ phần Tập đoàn KIDO',
+        'QNS': 'Công ty Cổ phần Đường Quảng Ngãi',
+        'SBT': 'Công ty Cổ phần Thành Thành Công - Biên Hòa',
+        'DBC': 'Công ty Cổ phần Tập đoàn Dabaco Việt Nam',
+        'BAF': 'Công ty Cổ phần Nông nghiệp BAF Việt Nam',
+        'HAG': 'Công ty Cổ phần Hoàng Anh Gia Lai',
+        'HNG': 'Công ty Cổ phần Nông nghiệp Quốc tế Hoàng Anh Gia Lai',
+        'VHC': 'Công ty Cổ phần Vĩnh Hoàn',
+        'ANV': 'Công ty Cổ phần Nam Việt',
+        'IDI': 'Công ty Cổ phần Đầu tư và Phát triển Đa Quốc Gia I.D.I',
+        'HAH': 'Công ty Cổ phần Vận tải và Xếp dỡ Hải An',
+        'GMD': 'Công ty Cổ phần Gemadept',
+        'VOS': 'Công ty Cổ phần Vận tải Biển Việt Nam',
+        'VJC': 'Công ty Cổ phần Hàng không VietJet (Vietjet Air)',
+        'HVN': 'Tổng Công ty Hàng không Việt Nam (Vietnam Airlines)',
+        'ACV': 'Tổng Công ty Cảng Hàng không Việt Nam',
+        'REE': 'Công ty Cổ phần Cơ Điện Lạnh (REE)',
+        'PC1': 'Công ty Cổ phần Tập đoàn PC1',
+        'HDG': 'Công ty Cổ phần Tập đoàn Hà Đô',
+        'GEG': 'Công ty Cổ phần Điện Gia Lai',
+        'POW': 'Tổng Công ty Điện lực Dầu khí Việt Nam (PV Power)',
+        'NT2': 'Công ty Cổ phần Điện lực Dầu khí Nhơn Trạch 2',
+        'CTR': 'Tổng Công ty Cổ phần Công trình Viettel (Viettel Construction)',
+        'VGI': 'Tổng Công ty Cổ phần Đầu tư Quốc tế Viettel (Viettel Global)',
+        'VTP': 'Tổng Công ty Cổ phần Bưu chính Viettel (Viettel Post)',
+        'FOX': 'Công ty Cổ phần Viễn thông FPT (FPT Telecom)',
+        'ELC': 'Công ty Cổ phần Công nghệ - Viễn thông ELCOM',
+        'CMG': 'Công ty Cổ phần Tập đoàn Công nghệ CMC',
+        'MCH': 'Công ty Cổ phần Hàng tiêu dùng Masan (Masan Consumer)',
+        'MML': 'Công ty Cổ phần Masan MEATLife',
+        'NKG': 'Công ty Cổ phần Thép Nam Kim',
+        'HSG': 'Công ty Cổ phần Tập đoàn Hoa Sen',
+        'TLH': 'Công ty Cổ phần Tập đoàn Thép Tiến Lên',
+        'VGS': 'Công ty Cổ phần Ống thép Việt Đức VG PIPE',
+        'HT1': 'Công ty Cổ phần Xi măng Vicem Hà Tiên',
+        'BCC': 'Công ty Cổ phần Xi măng Vicem Bỉm Sơn',
+        'VCS': 'Công ty Cổ phần VICOSTONE',
+        'PTB': 'Công ty Cổ phần Phú Tài',
+        'BMP': 'Công ty Cổ phần Nhựa Bình Minh',
+        'NTP': 'Công ty Cổ phần Nhựa Thiếu niên Tiền Phong',
+        'AAA': 'Công ty Cổ phần Nhựa An Phát Xanh',
+        'DGC': 'Công ty Cổ phần Tập đoàn Hóa chất Đức Giang',
+        'CSV': 'Công ty Cổ phần Hóa chất Cơ bản Miền Nam',
+        'DHG': 'Công ty Cổ phần Dược Hậu Giang',
+        'IMP': 'Công ty Cổ phần Dược phẩm Imexpharm',
+        'DBD': 'Công ty Cổ phần Dược - Trang thiết bị Y tế Bình Định (Bidiphar)',
+        'TNG': 'Công ty Cổ phần Đầu tư và Thương mại TNG',
+        'MSH': 'Công ty Cổ phần May Sông Hồng',
+        'STK': 'Công ty Cổ phần Sợi Thế Kỷ',
+        'TCM': 'Công ty Cổ phần Dệt may - Đầu tư - Thương mại Thành Công',
+        'GIL': 'Công ty Cổ phần Sản xuất Kinh doanh Xuất nhập khẩu Bình Thạnh (Gilimex)'
+    },
+
+    /**
+     * Clean and Restore Vietnamese Accents for Any Stock Name
+     */
+    cleanCompanyName(ticker, rawName) {
+        if (!ticker) return 'Doanh nghiệp Niêm yết';
+        const upper = ticker.trim().toUpperCase();
+        if (this.TOP_STOCKS_NAMES[upper]) {
+            return this.TOP_STOCKS_NAMES[upper];
+        }
+
+        if (!rawName || typeof rawName !== 'string') {
+            return `Công ty Cổ phần ${upper}`;
+        }
+
+        let name = rawName.trim();
+        name = name.replace(/\uFFFD/g, '');
+
+        name = name
+            .replace(/Cao\s*su\s*D.*N.*ng/gi, 'Cao su Đà Nẵng')
+            .replace(/D\s*N\?ng/gi, 'Đà Nẵng')
+            .replace(/D\s*Nẵng/gi, 'Đà Nẵng')
+            .replace(/Đ\s*N\?ng/gi, 'Đà Nẵng')
+            .replace(/Đ\s*Nẵng/gi, 'Đà Nẵng')
+            .replace(/C\?\s*ph\?n/gi, 'Cổ phần')
+            .replace(/C\?\s*phi\?u/gi, 'Cổ phiếu')
+            .replace(/T\?\s*p\s*do\s*à\s*n/gi, 'Tập đoàn')
+            .replace(/T\?p\s*doàn/gi, 'Tập đoàn')
+            .replace(/T\?p\s*đoàn/gi, 'Tập đoàn')
+            .replace(/T\?ng\s*Công\s*ty/gi, 'Tổng Công ty')
+            .replace(/Tong\s*cong\s*ty/gi, 'Tổng Công ty')
+            .replace(/Ð\?u\s*tu/gi, 'Đầu tư')
+            .replace(/D\?u\s*tu/gi, 'Đầu tư')
+            .replace(/Thuong\s*m\?i/gi, 'Thương mại')
+            .replace(/Thuong\s*mai/gi, 'Thương mại')
+            .replace(/B\?t\s*d\?ng\s*s\?n/gi, 'Bất động sản')
+            .replace(/Th\?y\s*s\?n/gi, 'Thủy sản')
+            .replace(/Thu\?\s*s\?n/gi, 'Thủy sản')
+            .replace(/Th\?y\s*di\?n/gi, 'Thủy điện')
+            .replace(/Th\?y\s*điện/gi, 'Thủy điện')
+            .replace(/Xu\?t\s*nh\?p\s*kh\?u/gi, 'Xuất nhập khẩu')
+            .replace(/V\?n\s*t\?i/gi, 'Vận tải')
+            .replace(/Van\s*tai/gi, 'Vận tải')
+            .replace(/S\?n\s*ph\?m/gi, 'Sản phẩm')
+            .replace(/Qu\?c\s*t\?/gi, 'Quốc tế')
+            .replace(/Ph\?t\s*tri\?n/gi, 'Phát triển')
+            .replace(/Phát\s*tri\?n/gi, 'Phát triển')
+            .replace(/Phat\s*trien/gi, 'Phát triển')
+            .replace(/X\?y\s*d\?ng/gi, 'Xây dựng')
+            .replace(/Xây\s*d\?ng/gi, 'Xây dựng')
+            .replace(/Xay\s*dung/gi, 'Xây dựng')
+            .replace(/Luong\s*th\?c/gi, 'Lương thực')
+            .replace(/Th\?c\s*ph\?m/gi, 'Thực phẩm')
+            .replace(/H\?a\s*ch\?t/gi, 'Hóa chất')
+            .replace(/Hóa\s*ch\?t/gi, 'Hóa chất')
+            .replace(/D\?u\s*kh\?/gi, 'Dầu khí')
+            .replace(/D\?u\s*khí/gi, 'Dầu khí')
+            .replace(/Dau\s*khi/gi, 'Dầu khí')
+            .replace(/D\?ch\s*v\?/gi, 'Dịch vụ')
+            .replace(/K\?\s*thu\?t/gi, 'Kỹ thuật')
+            .replace(/Ði\?n\s*l\?c/gi, 'Điện lực')
+            .replace(/Vi\?t\s*Nam/gi, 'Việt Nam')
+            .replace(/Nang\s*lu\?ng/gi, 'Năng lượng')
+            .replace(/Nang\s*luong/gi, 'Năng lượng')
+            .replace(/M\?i\s*tru\?ng/gi, 'Môi trường')
+            .replace(/Moi\s*truong/gi, 'Môi trường')
+            .replace(/B\?c\s*\?ng/gi, 'Bọc ống')
+            .replace(/H\?\s*t\?ng/gi, 'Hạ tầng')
+            .replace(/Co\s*kh\?/gi, 'Cơ khí')
+            .replace(/Kho\?ng\s*s\?n/gi, 'Khoáng sản')
+            .replace(/Khoang\s*san/gi, 'Khoáng sản')
+            .replace(/Thu\?c\s*s\?t\s*tr\?ng/gi, 'Thuốc sát trùng')
+            .replace(/V\?t\s*li\?u/gi, 'Vật liệu')
+            .replace(/Vat\s*lieu/gi, 'Vật liệu')
+            .replace(/Trang\s*tr\?\s*n\?i\s*th\?t/gi, 'Trang trí nội thất')
+            .replace(/K\?\s*ngh\?/gi, 'Kỹ nghệ')
+            .replace(/H\?ng\s*kh\?ng/gi, 'Hàng không')
+            .replace(/Truy\?n\s*th\?ng/gi, 'Truyền thông')
+            .replace(/Gi\?i\s*tr\?/gi, 'Giải trí')
+            .replace(/Mi\?n\s*Nam/gi, 'Miền Nam')
+            .replace(/Mi\?n\s*B\?c/gi, 'Miền Bắc')
+            .replace(/Mi\?n\s*Trung/gi, 'Miền Trung')
+            .replace(/Ð/g, 'Đ')
+            .replace(/\bCTCP\b/g, 'Công ty Cổ phần')
+            .replace(/\bTCT\b/g, 'Tổng Công ty');
+
+        name = name.replace(/\s*\?\s*/g, ' ').replace(/\s{2,}/g, ' ');
+        return name;
+    },
+
+    /**
      * Fetch Live Real-Time Stock Quote for any Ticker (HOSE, HNX, UPCoM) or Index
      */
     async getStockQuote(symbol) {
@@ -428,7 +718,7 @@ const StockAPI = {
 
         return {
             ticker: ticker,
-            name: d.n || `${ticker} Corporation`,
+            name: this.cleanCompanyName(ticker, d.n),
             exchange: exchange,
             isIndex: false,
             isLiveRealtimeFeed: false,
@@ -474,7 +764,7 @@ const StockAPI = {
         const db = window.VN_STOCKS_DB || {};
         const meta = db[ticker] || {};
         const exchange = isIndex ? 'INDEX' : (meta.ex || this.detectExchange(ticker));
-        const companyName = isIndex ? `${ticker} Index` : (meta.n || `${ticker} Corporation`);
+        const companyName = isIndex ? `${ticker} Index` : this.cleanCompanyName(ticker, meta.n);
 
         let change = Math.round((currentPrice - refPrice) * 100) / 100;
         let percentChange = refPrice > 0 ? Math.round(((currentPrice - refPrice) / refPrice) * 10000) / 100 : 0;
