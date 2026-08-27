@@ -249,19 +249,26 @@ body {
 
 .main-container {
     flex: 1;
-    max-width: 1600px;
+    max-width: 1760px;
     width: 100%;
     margin: 0 auto;
     padding: 16px 20px;
     display: grid;
-    grid-template-columns: 1fr 440px;
+    grid-template-columns: 460px 1fr;
     gap: 20px;
     height: calc(100vh - 120px);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
     .main-container {
-        grid-template-columns: 1fr 380px;
+        grid-template-columns: 420px 1fr;
+    }
+}
+
+@media (max-width: 1100px) {
+    .main-container {
+        grid-template-columns: 380px 1fr;
+        gap: 14px;
     }
 }
 
@@ -271,6 +278,8 @@ body {
         height: auto;
         display: flex;
         flex-direction: column;
+        padding: 12px 14px;
+        gap: 16px;
     }
 }
 
@@ -555,10 +564,42 @@ body {
    ========================================================================== */
 
 .inspector-panel {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(360px, 1.15fr) minmax(320px, 0.85fr);
     gap: 16px;
     overflow-y: auto;
+    align-content: start;
+}
+
+/* Card 1: Soi mã, Tìm kiếm, FireAnt & 6 Chỉ số */
+.inspector-panel > .panel-card:first-child {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+/* Card 2: Danh mục theo dõi Watchlist */
+.inspector-panel > .panel-card:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+/* Card 3: Bảng giá vàng trực tuyến */
+.inspector-panel > .commodities-card {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+@media (max-width: 1180px) {
+    .inspector-panel {
+        display: flex;
+        flex-direction: column;
+    }
+    .inspector-panel > .panel-card:first-child,
+    .inspector-panel > .panel-card:nth-child(2),
+    .inspector-panel > .commodities-card {
+        grid-column: auto;
+        grid-row: auto;
+    }
 }
 
 .panel-card {
@@ -847,6 +888,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    overflow: visible;
 }
 
 .wl-item {
