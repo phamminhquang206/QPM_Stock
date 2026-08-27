@@ -3,7 +3,7 @@
  * Enables Offline Capabilities & Progressive Web App (PWA) Functionality
  */
 
-const CACHE_NAME = 'qpm-stock-v1.5.3';
+const CACHE_NAME = 'qpm-stock-v1.5.5';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -23,9 +23,14 @@ const STATIC_ASSETS = [
 // Domains that should NEVER be cached (Real-time live APIs)
 const BYPASS_CACHE_DOMAINS = [
     'generativelanguage.googleapis.com',
+    'vang.today',
+    'api.binance.com',
+    'api.gold-api.com',
     'services.entrade.com.vn',
     'iboard-query.ssi.com.vn',
-    'fireant.vn'
+    'bgapidatafeed.vps.com.vn',
+    'fireant.vn',
+    'script.google.com'
 ];
 
 // 1. Install Event: Cache Core Assets
@@ -60,9 +65,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Bypass live financial APIs & Gemini LLM
-    if (BYPASS_CACHE_DOMAINS.some(domain => url.hostname.includes(domain))) {
-        return; // Normal network request
+    // Bỏ qua hoàn toàn các API bên ngoài hoặc các domain tài chính realtime
+    if (!url.origin.startsWith(self.location.origin) || BYPASS_CACHE_DOMAINS.some(domain => url.hostname.includes(domain))) {
+        return; // Gửi thẳng ra Internet, không qua Cache
     }
 
     // For HTML navigation: Network First, fallback to Cache

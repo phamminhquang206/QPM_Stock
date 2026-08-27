@@ -646,16 +646,29 @@ const StockAPI = {
     /**
      * Fetch Live Gold Prices (SJC, DOJI, World Spot Gold XAU/USD)
      */
-    async getCommoditiesPrices() {
+    async getCommoditiesPrices(forceRefresh = false) {
         const cacheKey = 'gold_prices';
-        const cached = this.cache.get(cacheKey);
-        if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
-            return cached.data;
+        if (!forceRefresh) {
+            const cached = this.cache.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
+                return cached.data;
+            }
+        } else {
+            this.cache.delete(cacheKey);
+            this.cache.delete('commodities_prices');
         }
 
         try {
-            const p1 = fetch('https://www.vang.today/api/prices').then(res => res.json()).catch(() => null);
-            const p2 = fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(res => res.json()).catch(() => null);
+            const ts = Date.now();
+            const p1 = fetch(`https://www.vang.today/api/prices?_t=${ts}`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            }).then(res => res.json()).catch(() => null);
+
+            const p2 = fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT&_t=${ts}`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            }).then(res => res.json()).catch(() => null);
 
             const [dojiData, worldGoldFeed] = await Promise.all([p1, p2]);
 

@@ -333,9 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (forceRefresh && window.StockAPI.cache) {
+                window.StockAPI.cache.delete('gold_prices');
                 window.StockAPI.cache.delete('commodities_prices');
             }
-            const data = await window.StockAPI.getCommoditiesPrices();
+            const data = await window.StockAPI.getCommoditiesPrices(forceRefresh);
 
             // SJC
             if (data && data.sjc && priceSjcBuy && priceSjcSell) {
