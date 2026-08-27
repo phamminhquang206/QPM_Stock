@@ -660,15 +660,25 @@ const StockAPI = {
 
         try {
             const ts = Date.now();
-            const p1 = fetch(`https://www.vang.today/api/prices?_t=${ts}`, {
-                cache: 'no-store',
-                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
-            }).then(res => res.json()).catch(() => null);
+            const p1 = fetch(`https://www.vang.today/api/prices?_t=${ts}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .catch(err => {
+                    console.warn('[StockAPI] Error fetching vang.today:', err);
+                    return null;
+                });
 
-            const p2 = fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT&_t=${ts}`, {
-                cache: 'no-store',
-                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
-            }).then(res => res.json()).catch(() => null);
+            const p2 = fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT&_t=${ts}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .catch(err => {
+                    console.warn('[StockAPI] Error fetching binance gold:', err);
+                    return null;
+                });
 
             const [dojiData, worldGoldFeed] = await Promise.all([p1, p2]);
 

@@ -3,7 +3,7 @@
  * Enables Offline Capabilities & Progressive Web App (PWA) Functionality
  */
 
-const CACHE_NAME = 'qpm-stock-v1.5.5';
+const CACHE_NAME = 'qpm-stock-v1.5.6';
 const STATIC_ASSETS = [
     './',
     './index.html',
