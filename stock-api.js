@@ -57,7 +57,7 @@ const StockAPI = {
         if (!symbol) throw new Error("Mã chứng khoán không được để trống");
         const ticker = symbol.trim().toUpperCase();
         const cacheKey = `quote_${ticker}`;
-        
+
         const cached = this.cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL_MS)) {
             return cached.data;
@@ -90,7 +90,7 @@ const StockAPI = {
                         const volume = item.lot > 0 ? item.lot * 10 : 0;
                         const foreignBuy = item.fBVol ? (Number(item.fBVol) * 10) : 0;
                         const foreignSell = item.fSVolume ? (Number(item.fSVolume) * 10) : 0;
-                        
+
                         const rawChange = curPrice - refPrice;
                         const change = Math.round(rawChange * 100) / 100;
                         let pctChange = 0;
@@ -114,11 +114,11 @@ const StockAPI = {
                             const histRes = await fetch(vndUrl, { signal: histController.signal });
                             clearTimeout(histTimeout);
                             if (histRes.ok) histData = await histRes.json();
-                        } catch (histErr) {}
+                        } catch (histErr) { }
 
                         const quote = this.buildQuoteObject(
-                            ticker, curPrice, refPrice, openPrice, highPrice, lowPrice, volume, false, 
-                            histData, 1000, 
+                            ticker, curPrice, refPrice, openPrice, highPrice, lowPrice, volume, false,
+                            histData, 1000,
                             { ceil: ceilPrice, floor: floorPrice, change: change, pct: pctChange, foreignBuy, foreignSell }
                         );
                         this.cache.set(cacheKey, { timestamp: Date.now(), data: quote });
@@ -147,14 +147,14 @@ const StockAPI = {
             } catch (vndErr) {
                 // Secondary Fallback: Entrade Gateway
                 try {
-                    const fallbackUrl = isIndex 
+                    const fallbackUrl = isIndex
                         ? `https://services.entrade.com.vn/chart-api/v2/ohlcs/index?from=${fromSec}&to=${nowSec}&symbol=${targetSymbol}&resolution=1D`
                         : `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${fromSec}&to=${nowSec}&symbol=${targetSymbol}&resolution=1D`;
                     const controller2 = new AbortController();
                     const timeoutId2 = setTimeout(() => controller2.abort(), 4000);
                     res = await fetch(fallbackUrl, { signal: controller2.signal });
                     clearTimeout(timeoutId2);
-                } catch (entradeErr) {}
+                } catch (entradeErr) { }
             }
 
             if (res && res.ok) {
@@ -514,8 +514,8 @@ const StockAPI = {
 
         const foreignBuy = (liveMeta && liveMeta.foreignBuy !== undefined) ? liveMeta.foreignBuy : (meta.bf || Math.round(volume * 0.12));
         const foreignSell = (liveMeta && liveMeta.foreignSell !== undefined) ? liveMeta.foreignSell : (meta.sf || Math.round(volume * 0.08));
-        const foreignNet = (liveMeta && liveMeta.foreignBuy !== undefined && liveMeta.foreignSell !== undefined) 
-            ? (liveMeta.foreignBuy - liveMeta.foreignSell) 
+        const foreignNet = (liveMeta && liveMeta.foreignBuy !== undefined && liveMeta.foreignSell !== undefined)
+            ? (liveMeta.foreignBuy - liveMeta.foreignSell)
             : ((meta.bf && meta.sf) ? (meta.bf - meta.sf) : Math.round(volume * 0.04));
 
         return {
@@ -646,42 +646,19 @@ const StockAPI = {
     /**
      * Fetch Live Gold Prices (SJC, DOJI, World Spot Gold XAU/USD)
      */
-    async getCommoditiesPrices(forceRefresh = false) {
+    async getCommoditiesPrices() {
         const cacheKey = 'gold_prices';
-        const GOLD_CACHE_TTL = 30 * 60 * 1000; // 30 phút
-        if (!forceRefresh) {
-            const cached = this.cache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp < GOLD_CACHE_TTL)) {
-                return cached.data;
-            }
-        } else {
-            this.cache.delete(cacheKey);
-            this.cache.delete('commodities_prices');
+        const cached = this.cache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
+            return cached.data;
         }
 
         try {
-            const ts = Date.now();
-            const p1 = fetch(`https://www.vang.today/api/prices?_t=${ts}`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .catch(err => {
-                    console.warn('[StockAPI] Error fetching vang.today:', err);
-                    return null;
-                });
+            const p1 = fetch('https://www.vang.today/api/prices').then(res => res.json()).catch(() => null);
+            const p2 = fetch('https://api.gold-api.com/price/XAU').then(res => res.json()).catch(() => null);
+            const p3 = fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(res => res.json()).catch(() => null);
 
-            const p2 = fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT&_t=${ts}`)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .catch(err => {
-                    console.warn('[StockAPI] Error fetching binance gold:', err);
-                    return null;
-                });
-
-            const [dojiData, worldGoldFeed] = await Promise.all([p1, p2]);
+            const [dojiData, goldApiSpot, worldGoldFeed] = await Promise.all([p1, p2, p3]);
 
             let result = {
                 timestamp: Date.now(),
@@ -699,7 +676,7 @@ const StockAPI = {
             try {
                 const raw = localStorage.getItem('qpm_gold_session_baseline');
                 if (raw) vnGoldBaseline = JSON.parse(raw);
-            } catch (e) {}
+            } catch (e) { }
 
             if (dojiData && dojiData.success && dojiData.prices) {
                 const sjc = dojiData.prices['DOHNL'] || dojiData.prices['DOHCML'];
@@ -726,11 +703,11 @@ const StockAPI = {
 
                 try {
                     localStorage.setItem('qpm_gold_session_baseline', JSON.stringify(vnGoldBaseline));
-                } catch (e) {}
+                } catch (e) { }
 
                 if (sjc) {
-                    const openPrice = (vnGoldBaseline && vnGoldBaseline.sjcOpen > 0) 
-                        ? vnGoldBaseline.sjcOpen 
+                    const openPrice = (vnGoldBaseline && vnGoldBaseline.sjcOpen > 0)
+                        ? vnGoldBaseline.sjcOpen
                         : (sjc.buy - (sjc.change_buy || 0));
                     const change = sjc.buy - openPrice;
                     const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
@@ -745,8 +722,8 @@ const StockAPI = {
                 }
 
                 if (ring) {
-                    const openPrice = (vnGoldBaseline && vnGoldBaseline.ringOpen > 0) 
-                        ? vnGoldBaseline.ringOpen 
+                    const openPrice = (vnGoldBaseline && vnGoldBaseline.ringOpen > 0)
+                        ? vnGoldBaseline.ringOpen
                         : (ring.buy - (ring.change_buy || 0));
                     const change = ring.buy - openPrice;
                     const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
@@ -761,7 +738,7 @@ const StockAPI = {
                 }
             }
 
-            // 2. World Gold with 24h real-time session change from Global Direct Feed
+            // 2. World Gold (XAU/USD) with 24h real-time session change from Global Direct Feed
             if (worldGoldFeed && worldGoldFeed.lastPrice) {
                 const curPrice = Number(worldGoldFeed.lastPrice) || 0;
                 const change = Number(worldGoldFeed.priceChange) || 0;
@@ -832,7 +809,7 @@ const StockAPI = {
                     const timeoutId2 = setTimeout(() => controller2.abort(), 4000);
                     res = await fetch(fallbackUrl, { signal: controller2.signal });
                     clearTimeout(timeoutId2);
-                } catch (entradeErr) {}
+                } catch (entradeErr) { }
             }
 
             if (res && res.ok) {
@@ -896,9 +873,9 @@ const StockAPI = {
      * Generate Authentic Historical Daily Candlesticks (Smooth stochastic backwards calculation)
      */
     generateHistoricalSeries(symbol, days = 90, isIndex = false) {
-        const quote = this.isIndexSymbol(symbol) 
+        const quote = this.isIndexSymbol(symbol)
             ? this.INDICES_DATA[symbol] || { price: 1768.12, ref: 1734.24, open: 1738, high: 1770, low: 1734, vol: 850000000 }
-            : (window.VN_STOCKS_DB && window.VN_STOCKS_DB[symbol]) 
+            : (window.VN_STOCKS_DB && window.VN_STOCKS_DB[symbol])
                 ? this.buildFromDbRecord(symbol, window.VN_STOCKS_DB[symbol])
                 : this.buildGenericQuote(symbol);
 
@@ -941,7 +918,7 @@ const StockAPI = {
                 currentC = o;
             } else {
                 const pctChange = (Math.sin(i * 0.4) * 0.01 + (Math.random() - 0.49) * dailyVol);
-                const prevClose = isIndex 
+                const prevClose = isIndex
                     ? Math.round((currentC / (1 + pctChange)) * 100) / 100
                     : Math.round((currentC / (1 + pctChange)) / 50) * 50;
 

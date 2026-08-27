@@ -153,25 +153,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Auto-refresh: Chỉ số & Cổ phiếu mỗi 60 giây (1 phút), Giá vàng mỗi 30 phút (1800s)
-    setInterval(() => {
-        loadMarketTicker();
-        loadWatchlist();
-        if (currentSelectedTicker) loadTickerToInspector(currentSelectedTicker);
-    }, 60000); // 60s / lần cho cổ phiếu & chỉ số
+    /**
+     * Kiểm tra xem thị trường Chứng khoán Việt Nam có đang trong phiên giao dịch không
+     * Khung giờ: Thứ 2 - Thứ 6 | Sáng: 09:00 - 11:35 | Chiều: 12:55 - 15:05 (Giờ VN GMT+7)
+     */
+    function isVNStockMarketOpen() {
+        const now = new Date();
+        const vnTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+        const day = vnTime.getDay();
+        if (day === 0 || day === 6) return false; // Cuối tuần đóng cửa
 
-    setInterval(() => {
-        loadCommodities();
-    }, 30 * 60 * 1000); // 30 phút / lần cho giá vàng
+        const totalMinutes = vnTime.getHours() * 60 + vnTime.getMinutes();
+        const isMorning = totalMinutes >= 540 && totalMinutes <= 695;   // 09:00 - 11:35
+        const isAfternoon = totalMinutes >= 775 && totalMinutes <= 905; // 12:55 - 15:05
+        return isMorning || isAfternoon;
+    }
 
-    // Khi người dùng từ ứng dụng khác / màn hình khóa quay lại app: Tự động làm mới ngay lập tức cả Cổ phiếu & Giá vàng
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            console.log('[QPM Stock] App resumed from background - refreshing live data...');
+    // Auto-refresh: 
+    // - Chỉ số & Cổ phiếu: Mỗi 60s CHỈ KHI TRONG GIỜ GIAO DỊCH (09:00 - 15:00 T2-T6). Ngoài giờ: Tự động dừng.
+    // - Giá vàng: Mỗi 30 phút.
+    setInterval(() => {
+        if (isVNStockMarketOpen()) {
             loadMarketTicker();
             loadWatchlist();
             if (currentSelectedTicker) loadTickerToInspector(currentSelectedTicker);
-            loadCommodities(true); // Ép tải mới giá vàng ngay lập tức
+        }
+    }, 60000);
+
+    setInterval(() => {
+        loadCommodities();
+    }, 30 * 60 * 1000); // 30 phút / lần
+
+    // Khi người dùng từ ứng dụng khác / màn hình khóa quay lại app:
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            console.log('[QPM Stock] App resumed from background...');
+            if (isVNStockMarketOpen()) {
+                loadMarketTicker();
+                loadWatchlist();
+                if (currentSelectedTicker) loadTickerToInspector(currentSelectedTicker);
+            }
+            loadCommodities(true); // Luôn làm mới giá vàng
         }
     });
 
