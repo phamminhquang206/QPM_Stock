@@ -648,9 +648,10 @@ const StockAPI = {
      */
     async getCommoditiesPrices(forceRefresh = false) {
         const cacheKey = 'gold_prices';
+        const GOLD_CACHE_TTL = 30 * 60 * 1000; // 30 phút
         if (!forceRefresh) {
             const cached = this.cache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp < 30000)) { // 30s cache
+            if (cached && (Date.now() - cached.timestamp < GOLD_CACHE_TTL)) {
                 return cached.data;
             }
         } else {

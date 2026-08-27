@@ -153,9 +153,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Auto-refresh market indices every 30s, commodities every 60s
-    setInterval(loadMarketTicker, 30000);
-    setInterval(loadCommodities, 60000);
+    // Auto-refresh: Chỉ số & Cổ phiếu mỗi 60 giây (1 phút), Giá vàng mỗi 30 phút (1800s)
+    setInterval(() => {
+        loadMarketTicker();
+        loadWatchlist();
+        if (currentSelectedTicker) loadTickerToInspector(currentSelectedTicker);
+    }, 60000); // 60s / lần cho cổ phiếu & chỉ số
+
+    setInterval(() => {
+        loadCommodities();
+    }, 30 * 60 * 1000); // 30 phút / lần cho giá vàng
+
+    // Khi người dùng từ ứng dụng khác / màn hình khóa quay lại app: Tự động làm mới ngay lập tức cả Cổ phiếu & Giá vàng
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            console.log('[QPM Stock] App resumed from background - refreshing live data...');
+            loadMarketTicker();
+            loadWatchlist();
+            if (currentSelectedTicker) loadTickerToInspector(currentSelectedTicker);
+            loadCommodities(true); // Ép tải mới giá vàng ngay lập tức
+        }
+    });
 
     // 3. API Key & Settings Event Handlers
     btnOpenSettings.addEventListener('click', () => {
