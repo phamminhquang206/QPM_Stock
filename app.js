@@ -62,17 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSelectedTicker = 'FPT';
     window.currentStockTicker = 'FPT';
     const WATCHLIST_KEY = 'qpm_watchlist';
-    const DEFAULT_WATCHLIST = ['FPT', 'HPG', 'SSI', 'PVS', 'SHS', 'BSR', 'ACV', 'MCH'];
 
     function getSavedWatchlist() {
         try {
             const raw = localStorage.getItem(WATCHLIST_KEY);
-            if (raw) {
+            if (raw !== null) {
                 const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                if (Array.isArray(parsed)) return parsed;
             }
         } catch (e) {}
-        return [...DEFAULT_WATCHLIST];
+        return [];
     }
 
     function saveWatchlist(list) {
@@ -96,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         list.push(sym);
         saveWatchlist(list);
-        appendWatchlistItem(sym);
+        loadWatchlist();
     }
 
     function removeFromWatchlist(symbol) {
@@ -107,7 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById(`wl-${sym}`);
         if (el) {
             el.classList.add('wl-item-removing');
-            setTimeout(() => el.remove(), 280);
+            setTimeout(() => {
+                el.remove();
+                if (list.length === 0) {
+                    loadWatchlist();
+                }
+            }, 280);
+        } else {
+            loadWatchlist();
         }
     }
 
@@ -309,6 +315,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadWatchlist() {
         watchlistContainer.innerHTML = '';
         const list = getSavedWatchlist();
+        if (list.length === 0) {
+            watchlistContainer.innerHTML = `
+                <div class="wl-empty-msg" style="text-align: center; padding: 18px 8px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5; background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); border: 1px dashed var(--border-color);">
+                    ⭐ Danh mục đang trống.<br>Bấm <strong style="color: var(--color-brand-cyan);">＋ Thêm mã</strong> để theo dõi cổ phiếu.
+                </div>
+            `;
+            return;
+        }
         list.forEach(sym => appendWatchlistItem(sym));
     }
 
