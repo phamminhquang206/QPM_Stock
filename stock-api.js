@@ -944,11 +944,12 @@ const StockAPI = {
         }
 
         try {
-            const p1 = fetch('https://www.vang.today/api/prices').then(res => res.json()).catch(() => null);
+            const p1 = fetch('https://www.vang.today/api/prices.php').then(res => res.json()).catch(() => null);
+            const pSummary = fetch('https://www.vang.today/api/prices.php?summary=1').then(res => res.json()).catch(() => null);
             const p2 = fetch('https://api.gold-api.com/price/XAU').then(res => res.json()).catch(() => null);
             const p3 = fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(res => res.json()).catch(() => null);
 
-            const [dojiData, goldApiSpot, worldGoldFeed] = await Promise.all([p1, p2, p3]);
+            const [dojiData, summaryData, goldApiSpot, worldGoldFeed] = await Promise.all([p1, pSummary, p2, p3]);
 
             let result = {
                 timestamp: Date.now(),
@@ -960,51 +961,36 @@ const StockAPI = {
                 worldGold: null
             };
 
-            // 1. Session Baseline Tracking for Vietnam Gold (SJC & DOJI)
-            const todayStr = (dojiData && dojiData.date) ? dojiData.date : new Date().toISOString().slice(0, 10);
-            let vnGoldBaseline = null;
+            // 1. Vietnam Gold (SJC & DOJI) - Realtime Prices from /prices.php & Daily Differences from summary=1
             try {
-                const raw = localStorage.getItem('qpm_gold_session_baseline');
-                if (raw) vnGoldBaseline = JSON.parse(raw);
+                localStorage.removeItem('qpm_gold_session_baseline');
             } catch (e) { }
 
+            const summaryMap = (summaryData && summaryData.success && summaryData.summary) ? summaryData.summary : null;
+
             if (dojiData && dojiData.success && dojiData.prices) {
-                const sjc = dojiData.prices['DOHNL'] || dojiData.prices['DOHCML'];
+                const sjc = dojiData.prices['DOHNL'] || dojiData.prices['DOHCML'] || dojiData.prices['VNGSJC'] || dojiData.prices['SJL1L10'];
                 const ring = dojiData.prices['DOJINHTV'];
 
-                // If today is a new day compared to stored baseline
-                if (!vnGoldBaseline || vnGoldBaseline.date !== todayStr) {
-                    const prevCloseSjc = (vnGoldBaseline && vnGoldBaseline.lastSjcBuy > 0) ? vnGoldBaseline.lastSjcBuy : null;
-                    const prevCloseRing = (vnGoldBaseline && vnGoldBaseline.lastRingBuy > 0) ? vnGoldBaseline.lastRingBuy : null;
-
-                    vnGoldBaseline = {
-                        date: todayStr,
-                        // Inherit yesterday's close as today's open baseline if available
-                        sjcOpen: prevCloseSjc || (sjc ? (sjc.buy - (sjc.change_buy || 0)) : 0),
-                        ringOpen: prevCloseRing || (ring ? (ring.buy - (ring.change_buy || 0)) : 0),
-                        lastSjcBuy: sjc ? sjc.buy : 0,
-                        lastRingBuy: ring ? ring.buy : 0
-                    };
-                } else {
-                    // Update latest price of today as candidate for closing price
-                    if (sjc) vnGoldBaseline.lastSjcBuy = sjc.buy;
-                    if (ring) vnGoldBaseline.lastRingBuy = ring.buy;
-                }
-
-                try {
-                    localStorage.setItem('qpm_gold_session_baseline', JSON.stringify(vnGoldBaseline));
-                } catch (e) { }
-
                 if (sjc) {
-                    const openPrice = (vnGoldBaseline && vnGoldBaseline.sjcOpen > 0)
-                        ? vnGoldBaseline.sjcOpen
-                        : (sjc.buy - (sjc.change_buy || 0));
-                    const change = sjc.buy - openPrice;
+                    const buy = Number(sjc.buy) || 0;
+                    const sell = Number(sjc.sell) || 0;
+                    const sjcSummary = summaryMap ? (summaryMap['DOHNL'] || summaryMap['DOHCML'] || summaryMap['VNGSJC'] || summaryMap['SJL1L10']) : null;
+
+                    const change = (sjcSummary && sjcSummary.total_change_buy !== undefined)
+                        ? Number(sjcSummary.total_change_buy)
+                        : (Number(sjc.change_buy) || 0);
+
+                    const openPrice = (sjcSummary && sjcSummary.open && Number(sjcSummary.open.buy) > 0)
+                        ? Number(sjcSummary.open.buy)
+                        : (buy - change);
+
                     const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
+
                     result.sjc = {
                         name: 'Vàng miếng SJC',
-                        buy: sjc.buy,
-                        sell: sjc.sell,
+                        buy: buy,
+                        sell: sell,
                         openBuy: openPrice,
                         change: change,
                         percentChange: pct
@@ -1012,15 +998,24 @@ const StockAPI = {
                 }
 
                 if (ring) {
-                    const openPrice = (vnGoldBaseline && vnGoldBaseline.ringOpen > 0)
-                        ? vnGoldBaseline.ringOpen
-                        : (ring.buy - (ring.change_buy || 0));
-                    const change = ring.buy - openPrice;
+                    const buy = Number(ring.buy) || 0;
+                    const sell = Number(ring.sell) || 0;
+                    const ringSummary = summaryMap ? summaryMap['DOJINHTV'] : null;
+
+                    const change = (ringSummary && ringSummary.total_change_buy !== undefined)
+                        ? Number(ringSummary.total_change_buy)
+                        : (Number(ring.change_buy) || 0);
+
+                    const openPrice = (ringSummary && ringSummary.open && Number(ringSummary.open.buy) > 0)
+                        ? Number(ringSummary.open.buy)
+                        : (buy - change);
+
                     const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
+
                     result.ring = {
                         name: 'Nhẫn tròn DOJI',
-                        buy: ring.buy,
-                        sell: ring.sell,
+                        buy: buy,
+                        sell: sell,
                         openBuy: openPrice,
                         change: change,
                         percentChange: pct
@@ -1028,11 +1023,20 @@ const StockAPI = {
                 }
             }
 
-            // 2. World Gold (XAU/USD) with 24h real-time session change from Global Direct Feed
-            if (worldGoldFeed && worldGoldFeed.lastPrice) {
-                const curPrice = Number(worldGoldFeed.lastPrice) || 0;
-                const change = Number(worldGoldFeed.priceChange) || 0;
-                const pct = Number(worldGoldFeed.priceChangePercent) || 0;
+            // 2. World Gold (XAU/USD) - Realtime Spot Gold (Priority: gold-api.com -> DOJI XAUUSD -> Binance)
+            const xauLive = (dojiData && dojiData.prices && dojiData.prices['XAUUSD']) ? dojiData.prices['XAUUSD'] : null;
+            const xauSummary = summaryMap ? summaryMap['XAUUSD'] : null;
+
+            if (goldApiSpot && Number(goldApiSpot.price) > 0) {
+                // Priority 1: Realtime Spot Gold XAU/USD from gold-api.com
+                const curPrice = Number(goldApiSpot.price);
+                const openPrice = (xauSummary && xauSummary.open && Number(xauSummary.open.buy) > 0)
+                    ? Number(xauSummary.open.buy)
+                    : (xauLive ? (Number(xauLive.buy) - (Number(xauLive.change_buy) || 0)) : 0);
+
+                const change = openPrice > 0 ? (curPrice - openPrice) : ((xauSummary && xauSummary.total_change_buy !== undefined) ? Number(xauSummary.total_change_buy) : 0);
+                const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
+
                 result.worldGold = {
                     name: 'Vàng Thế giới (XAU/USD)',
                     price: curPrice,
@@ -1040,16 +1044,34 @@ const StockAPI = {
                     percentChange: pct,
                     unit: 'USD/oz'
                 };
-            } else if (dojiData && dojiData.prices && dojiData.prices['XAUUSD']) {
-                // Fallback
-                const g = dojiData.prices['XAUUSD'];
-                const buy = Number(g.buy) || 0;
-                const change = Number(g.change_buy) || 0;
-                const prev = buy - change;
-                const pct = prev > 0 ? Number(((change / prev) * 100).toFixed(2)) : 0;
+            } else if (xauLive) {
+                // Priority 2: XAU/USD from DOJI / VangToday
+                const curPrice = Number(xauLive.buy) || 0;
+                const change = (xauSummary && xauSummary.total_change_buy !== undefined)
+                    ? Number(xauSummary.total_change_buy)
+                    : (Number(xauLive.change_buy) || 0);
+
+                const openPrice = (xauSummary && xauSummary.open && Number(xauSummary.open.buy) > 0)
+                    ? Number(xauSummary.open.buy)
+                    : (curPrice - change);
+
+                const pct = openPrice > 0 ? Number(((change / openPrice) * 100).toFixed(2)) : 0;
+
                 result.worldGold = {
                     name: 'Vàng Thế giới (XAU/USD)',
-                    price: buy,
+                    price: curPrice,
+                    change: change,
+                    percentChange: pct,
+                    unit: 'USD/oz'
+                };
+            } else if (worldGoldFeed && worldGoldFeed.lastPrice) {
+                // Priority 3: Binance PAXG Fallback
+                const curPrice = Number(worldGoldFeed.lastPrice) || 0;
+                const change = Number(worldGoldFeed.priceChange) || 0;
+                const pct = Number(worldGoldFeed.priceChangePercent) || 0;
+                result.worldGold = {
+                    name: 'Vàng Thế giới (XAU/USD)',
+                    price: curPrice,
                     change: change,
                     percentChange: pct,
                     unit: 'USD/oz'
