@@ -59,6 +59,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const commLastUpdate = document.getElementById('commodities-last-update');
     const btnRefreshCommodities = document.getElementById('btn-refresh-commodities');
 
+    // Mobile & Tablet Portrait Tab Switcher
+    const tabBtnChat = document.getElementById('tab-btn-chat');
+    const tabBtnMarket = document.getElementById('tab-btn-market');
+
+    function switchMobileTab(tabName) {
+        const targetTab = tabName === 'market' ? 'market' : 'chat';
+        document.body.setAttribute('data-active-tab', targetTab);
+
+        if (tabBtnChat && tabBtnMarket) {
+            tabBtnChat.classList.toggle('active', targetTab === 'chat');
+            tabBtnChat.setAttribute('aria-selected', targetTab === 'chat');
+
+            tabBtnMarket.classList.toggle('active', targetTab === 'market');
+            tabBtnMarket.setAttribute('aria-selected', targetTab === 'market');
+        }
+
+        try {
+            sessionStorage.setItem('qpm_active_tab', targetTab);
+        } catch (e) {}
+    }
+    window.switchMobileTab = switchMobileTab;
+
+    if (tabBtnChat) {
+        tabBtnChat.addEventListener('click', () => switchMobileTab('chat'));
+    }
+    if (tabBtnMarket) {
+        tabBtnMarket.addEventListener('click', () => switchMobileTab('market'));
+    }
+
+    // Default tab on every refresh is 'market' (Thị trường)
+    switchMobileTab('market');
+
     let currentSelectedTicker = 'FPT';
     window.currentStockTicker = 'FPT';
     const WATCHLIST_KEY = 'qpm_watchlist';
@@ -302,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="ticker-change ${idx.status}">${sign}${window.StockAPI.formatNumber(idx.change, 2)} (${sign}${idx.percentChange}%)</span>
                 `;
                 item.addEventListener('click', () => {
-                    loadTickerToInspector(idx.symbol);
+                    loadTickerToInspector(idx.symbol, true);
                 });
                 marketTickerBar.appendChild(item);
             });
@@ -465,7 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 7. Stock Inspector Loader
-    async function loadTickerToInspector(symbol) {
+    async function loadTickerToInspector(symbol, switchTab = false) {
+        if (switchTab) {
+            switchMobileTab('market');
+        }
         currentSelectedTicker = symbol.toUpperCase();
         heroSymbol.textContent = currentSelectedTicker;
         heroName.textContent = 'Đang tải dữ liệu...';
@@ -519,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') {
             const sym = searchInput.value.trim().toUpperCase();
             if (sym) {
-                loadTickerToInspector(sym);
+                loadTickerToInspector(sym, true);
                 searchInput.value = '';
             }
         }
@@ -688,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Global helper to inspect stock from chat card
     window.inspectStock = (ticker) => {
-        loadTickerToInspector(ticker);
+        loadTickerToInspector(ticker, true);
     };
 
     // Global FireAnt Launcher

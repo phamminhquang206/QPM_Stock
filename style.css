@@ -281,14 +281,126 @@ body {
     }
 }
 
-@media (max-width: 992px) {
-    .main-container {
-        grid-template-columns: 1fr;
-        height: auto;
+/* Mobile & Tablet Portrait Tab Bar (Hidden on Desktop & Wide Screens) */
+.mobile-tab-bar {
+    display: none;
+}
+
+@media (max-width: 992px), (max-width: 1024px) and (orientation: portrait) {
+    /* 1. Show Mobile Tab Bar */
+    .mobile-tab-bar {
+        display: block;
+        padding: 8px 12px 2px 12px;
+        background: var(--bg-main);
+    }
+
+    .mobile-tab-bar-inner {
         display: flex;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-full);
+        padding: 4px;
+        gap: 6px;
+        max-width: 460px;
+        margin: 0 auto;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .mobile-tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border: none;
+        border-radius: var(--radius-full);
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-main);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
+
+    .mobile-tab-btn .tab-icon {
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .mobile-tab-btn .tab-title {
+        letter-spacing: 0.2px;
+    }
+
+    .mobile-tab-btn.active {
+        background: var(--accent-gradient);
+        color: #ffffff;
+        box-shadow: 0 2px 12px rgba(124, 58, 237, 0.45);
+    }
+
+    .mobile-tab-btn:not(.active):hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mobile-tab-btn:active {
+        transform: scale(0.97);
+    }
+
+    /* 2. Main Workspace Layout in 2-Tab Mode */
+    .main-container {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 8px 12px 10px 12px;
+        gap: 0;
+        height: calc(100vh - 142px);
+        height: calc(100dvh - 142px);
+        min-height: 480px;
+        overflow: hidden;
+    }
+
+    /* 3. Tab Visibility Switching */
+    body[data-active-tab="chat"] .chat-panel {
+        display: flex !important;
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+        animation: tabFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body[data-active-tab="chat"] .inspector-panel {
+        display: none !important;
+    }
+
+    body[data-active-tab="market"] .chat-panel {
+        display: none !important;
+    }
+
+    body[data-active-tab="market"] .inspector-panel {
+        display: flex !important;
         flex-direction: column;
-        padding: 10px 12px;
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         gap: 12px;
+        animation: tabFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes tabFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 }
 
@@ -338,6 +450,7 @@ body {
 
 .chat-messages {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 14px 16px;
     display: flex;

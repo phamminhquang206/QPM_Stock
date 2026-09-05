@@ -28,7 +28,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-active-tab="market">
 
     <!-- ===== TOP HEADER ===== -->
     <header class="app-header">
@@ -67,6 +67,20 @@
             <div class="ticker-item"><span class="ticker-name">Đang tải chỉ số thị trường...</span></div>
         </div>
     </header>
+
+    <!-- ===== MOBILE & TABLET PORTRAIT TAB BAR ===== -->
+    <nav class="mobile-tab-bar" id="mobile-tab-bar" aria-label="Điều hướng tab di động">
+        <div class="mobile-tab-bar-inner">
+            <button type="button" class="mobile-tab-btn" id="tab-btn-chat" data-tab="chat" aria-selected="false">
+                <span class="tab-icon">🤖</span>
+                <span class="tab-title">Chat AI</span>
+            </button>
+            <button type="button" class="mobile-tab-btn active" id="tab-btn-market" data-tab="market" aria-selected="true">
+                <span class="tab-icon">📊</span>
+                <span class="tab-title">Thị trường</span>
+            </button>
+        </div>
+    </nav>
 
     <!-- ===== MAIN WORKSPACE ===== -->
     <main class="main-container">
